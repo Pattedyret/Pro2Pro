@@ -1,0 +1,96 @@
+import { getDb } from '../data/db';
+import { config } from '../config';
+import { playerGraph } from './graph';
+import { findShortestPath, countShortestPaths } from './pathfinder';
+
+export interface GeneratedPuzzle {
+  startPlayerId: number;
+  endPlayerId: number;
+  optimalPathLength: number;
+  numValidPaths: number;
+  difficulty: string;
+}
+
+/**
+ * Generate a daily puzzle for the given difficulty tier.
+ */
+export function generatePuzzle(difficulty: keyof typeof config.difficulty): GeneratedPuzzle | null {
+  const tier = config.difficulty[difficulty];
+  const connectedPlayers = playerGraph.getNotablePlayerIds();
+  const famousPlayers = playerGraph.getFamousPlayerIds();
+
+  if (connectedPlayers.length < 20) {
+    console.error('[PuzzleGen] Not enough notable players to generate puzzle');
+    return null;
+  }
+
+  const db = getDb();
+
+  // Get recently used player pairs to avoid repeats
+  const recentPairs = new Set<string>();
+  const recentRows = db.prepare(`
+    SELECT start_player_id, end_player_id FROM daily_puzzles
+    WHERE date > date('now', '-${config.puzzleRepeatDays} days')
+  `).all() as any[];
+
+  for (const row of recentRows) {
+    recentPairs.add(`${row.start_player_id}-${row.end_player_id}`);
+    recentPairs.add(`${row.end_player_id}-${row.start_player_id}`);
+  }
+
+  // Try random pairs until we find a valid puzzle
+  const maxAttempts = 500;
+
+  // Use famous pool if available, otherwise fall back to all notable
+  const famousPool = famousPlayers.length >= 10 ? famousPlayers : connectedPlayers;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Both players from the B+ famous pool
+    const startId = famousPool[Math.floor(Math.random() * famousPool.length)];
+    const endId = famousPool[Math.floor(Math.random() * famousPool.length)];
+
+    if (startId === endId) continue;
+
+    // Check not recently used
+    if (recentPairs.has(`${startId}-${endId}`)) continue;
+
+    // Find shortest path
+    const result = findShortestPath(startId, endId);
+    if (!result) continue;
+
+    // Check path length fits difficulty tier
+    if (result.length < tier.minPath || result.length > tier.maxPath) continue;
+
+    // Count distinct shortest paths (must have multiple valid routes)
+    const numPaths = countShortestPaths(startId, endId);
+    if (numPaths < 2) continue;
+
+    return {
+      startPlayerId: startId,
+      endPlayerId: endId,
+      optimalPathLength: result.length,
+      numValidPaths: numPaths,
+      difficulty,
+    };
+  }
+
+  console.warn(`[PuzzleGen] Failed to generate ${difficulty} puzzle after ${maxAttempts} attempts`);
+  return null;
+}
+
+/**
+ * Get today's difficulty based on the rotation cycle.
+ */
+export function getTodayDifficulty(puzzleNumber: number): keyof typeof config.difficulty {
+  const rotation = config.difficultyRotation;
+  return rotation[puzzleNumber % rotation.length];
+}
+
+/**
+ * Get the next puzzle number.
+ */
+export function getNextPuzzleNumber(): number {
+  const db = getDb();
+  const row = db.prepare('SELECT MAX(puzzle_number) as max_num FROM daily_puzzles').get() as any;
+  return (row?.max_num ?? 0) + 1;
+}

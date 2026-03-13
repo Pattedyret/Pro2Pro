@@ -1,0 +1,11 @@
+services:
+  bot:
+    build: .
+    container_name: pro2pro-bot
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bot-data:/app/data
+
+volumes:
+  bot-data:

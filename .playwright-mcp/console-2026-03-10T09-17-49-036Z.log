@@ -1,0 +1,37 @@
+[    1101ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://discord.com/api/v9/experiments?with_guild_experiments=true&platform=DEVELOPER_PORTAL:0
+[    1102ms] [ERROR] {ok: false, headers: Object, body: Object, text: {"message": "400: Bad Request", "code": 0}, status: 400} @ https://discord.com/assets/index.6ced2c9e5af4a738.js:17
+[    1415ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/applications?with_team_applications=true:0
+[    1420ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/teams:0
+[    1423ms] f
+[    1425ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/users/@me/guilds?with_counts=true:0
+[    1599ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/teams:0
+[    4086ms] [ERROR] Failed to load resource: the server responded with a status of 403 () @ https://discord.com/api/v9/apex/experiments?surface=2:0
+[    4345ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/promotions?locale=en-US&platform=0:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/189422196a4f8b53.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/ce3b8055f5114434.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/cb2006dbced0e246.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/7a6a566c2e88a35d.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/e52f0cba712e2fb4.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[    7894ms] [WARNING] The resource https://discord.com/assets/dd24010f3cf7def7.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://discord.com/login?redirect_to=%2Fdevelopers%2Fapplications:0
+[   21425ms] [ERROR] %c[KeybindsStore] 
+font-weight: bold;
+color: purple;
+ [kb store] KeybindStore: Looking for callback action TOGGLE_OVERLAY_INPUT_LOCK but it doesn't exist in this version. Skipping @ https://discord.com/assets/sentry.65aeaabe92d06a81.js:14
+[   21426ms] [ERROR] %c[KeybindsStore] 
+font-weight: bold;
+color: purple;
+ [kb store] KeybindStore: Looking for callback action SOUNDBOARD_HOLD but it doesn't exist in this version. Skipping @ https://discord.com/assets/sentry.65aeaabe92d06a81.js:14
+[   21426ms] [ERROR] %c[KeybindsStore] 
+font-weight: bold;
+color: purple;
+ [kb store] KeybindStore: Looking for callback action SAVE_CLIP but it doesn't exist in this version. Skipping @ https://discord.com/assets/sentry.65aeaabe92d06a81.js:14
+[   21426ms] [ERROR] %c[KeybindsStore] 
+font-weight: bold;
+color: purple;
+ [kb store] KeybindStore: Looking for callback action SAVE_SCREENSHOT but it doesn't exist in this version. Skipping @ https://discord.com/assets/sentry.65aeaabe92d06a81.js:14
+[   21452ms] Transitioning to authenticated state
+[   21652ms] [ERROR] Failed to load resource: the server responded with a status of 429 () @ https://discord.com/error-reporting-proxy/developers:0
+[   22009ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://discord.com/api/v9/users/@me/identity/verification:0
+[  125267ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://discord.com/api/v9/applications:0
+[  151582ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://discord.com/api/v9/applications/1480857828091625534/store-layout:0
+[  213826ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://discord.com/api/v9/applications/1480857828091625534/bot/reset:0
