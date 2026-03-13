@@ -7,5 +7,22 @@ services:
     volumes:
       - bot-data:/app/data
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: pro2pro-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - bot
+
 volumes:
   bot-data:
+  caddy-data:
+  caddy-config:

@@ -23,12 +23,17 @@ echo "[3/4] Setting up app directory..."
 sudo mkdir -p /opt/pro2pro
 sudo chown "$USER":"$USER" /opt/pro2pro
 
-# 4. Firewall — ensure outbound traffic is allowed (default on OCI Ubuntu)
-echo "[4/4] Verifying firewall allows outbound traffic..."
+# 4. Firewall — ensure outbound traffic and HTTP/HTTPS are allowed
+echo "[4/4] Configuring firewall rules..."
 if command -v iptables &>/dev/null; then
     # OCI Ubuntu images have iptables rules blocking some traffic by default
     # Ensure Docker network traffic is not blocked
     sudo iptables -I INPUT 1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+
+    # Open HTTP/HTTPS for Caddy (Let's Encrypt + reverse proxy)
+    sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+    sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+
     sudo netfilter-persistent save 2>/dev/null || true
 fi
 
