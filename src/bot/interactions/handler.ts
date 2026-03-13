@@ -16,7 +16,8 @@ import { validateLink } from '../../game/validator';
 import { scorePath } from '../../game/scorer';
 import { findShortestPath, findAllShortestPaths } from '../../game/pathfinder';
 import { getTodayPuzzle, getPuzzleById } from '../../data/models/puzzle';
-import { saveUserAttempt, getUserAttempt, saveCustomGameAttempt } from '../../data/models/userStats';
+import { saveUserAttempt, getUserAttempt, saveCustomGameAttempt, recordGiveUp, getUserStats } from '../../data/models/userStats';
+import { awardCompletionPoints } from '../../api/points';
 import { config } from '../../config';
 import {
   createSearchModal,
@@ -455,6 +456,20 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
   }
 
   const isOptimal = pathLength === optimalLength;
+
+  // Award points
+  const userStats = getUserStats(interaction.user.id);
+  awardCompletionPoints({
+    userId: interaction.user.id,
+    guildId: interaction.guildId ?? undefined,
+    source: 'bot',
+    puzzleId: game.type === 'daily' ? game.puzzleId : undefined,
+    customGameId: game.type === 'custom' ? game.puzzleId : undefined,
+    isOptimal,
+    difficulty: game.type === 'daily' ? difficulty : undefined,
+    currentStreak: userStats.current_streak,
+  });
+
   const pathNames = fullPath.map(id => playerGraph.getPlayerNameWithFlag(id));
 
   // Find an optimal path to show
@@ -644,6 +659,15 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
 
     // Track the give-up to block future guesses on this game
     givenUpGames.add(`${interaction.user.id}:${game.type}:${game.puzzleId}`);
+
+    // Persist give-up to stats
+    const { getDb } = require('../../data/db');
+    const guDb = getDb();
+    const guCustomGame = game.type === 'custom'
+      ? guDb.prepare('SELECT game_mode FROM custom_games WHERE id = ?').get(game.puzzleId) as { game_mode: string } | undefined
+      : undefined;
+    const guGameMode = game.type === 'daily' ? 'daily' : (guCustomGame?.game_mode === 'random' ? 'random' : 'custom') as 'daily' | 'custom' | 'random';
+    recordGiveUp(interaction.user.id, guGameMode);
 
     const allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
     if (allPaths.length > 0) {
