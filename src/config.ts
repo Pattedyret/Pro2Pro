@@ -44,4 +44,11 @@ export const config = {
   // B+ tier: all notable organizers (includes qualifiers, opens, etc.)
   bPlusTierOrganizers: ['BLAST', 'DreamHack', 'ESL', 'PGL', 'IEM', 'StarLadder', 'EPICENTER', 'ECS', 'ELEAGUE', 'Intel', 'FACEIT', 'ESEA'] as const,
   cctTierOrganizers: ['CCT'] as const,
+
+  // Web API
+  apiPort: parseInt(process.env.API_PORT || '3001', 10),
+  jwtSecret: process.env.JWT_SECRET || 'pro2pro-dev-secret-change-in-prod',
+  discordClientSecret: process.env.DISCORD_CLIENT_SECRET || '',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:3001',
 } as const;
