@@ -1,10 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || '1480857828091625534';
-const REDIRECT_URI = `${window.location.origin}/Pro2Pro/callback`;
-const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify+guilds`;
-
 export function Navbar() {
   const { user, loggedIn, logout, totalPoints } = useAuth();
 
@@ -24,7 +20,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          {loggedIn ? (
+          {loggedIn && (
             <>
               <span className="text-xs text-cyan-400 font-mono">{totalPoints} pts</span>
               <Link to="/profile" className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
@@ -41,13 +37,6 @@ export function Navbar() {
                 Logout
               </button>
             </>
-          ) : (
-            <a
-              href={DISCORD_AUTH_URL}
-              className="px-4 py-1.5 text-sm rounded-lg bg-[#5865F2] hover:bg-[#4752C4] text-white transition-colors"
-            >
-              Sign in with Discord
-            </a>
           )}
         </div>
       </div>

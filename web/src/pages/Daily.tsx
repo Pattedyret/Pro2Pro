@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
 import { GameBoard } from '../components/GameBoard';
 
-const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || '1480857828091625534';
-const REDIRECT_URI = `${window.location.origin}/Pro2Pro/callback`;
-const DISCORD_AUTH_URL = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify+guilds`;
-
 export function Daily() {
-  const { loggedIn } = useAuth();
   const { session, loading, startGame, guess, giveUp } = useGame();
   const [puzzle, setPuzzle] = useState<any>(null);
   const [loadingPuzzle, setLoadingPuzzle] = useState(true);
@@ -116,22 +110,13 @@ export function Daily() {
         <span>Optimal: <span className="text-cyan-400 font-mono">{puzzle?.optimalPathLength}</span> steps</span>
       </div>
 
-      {loggedIn ? (
-        <button
-          onClick={handleStart}
-          disabled={loading}
-          className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25 disabled:opacity-50"
-        >
-          {loading ? 'Starting...' : 'Start Game'}
-        </button>
-      ) : (
-        <a
-          href={DISCORD_AUTH_URL}
-          className="inline-block px-8 py-3 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold transition-colors"
-        >
-          Sign in to Play
-        </a>
-      )}
+      <button
+        onClick={handleStart}
+        disabled={loading}
+        className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25 disabled:opacity-50"
+      >
+        {loading ? 'Starting...' : 'Start Game'}
+      </button>
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
     </div>

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/Landing';
 import { Callback } from './pages/Callback';
 import { Daily } from './pages/Daily';
@@ -21,12 +20,12 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/callback" element={<Callback />} />
             <Route path="/daily" element={<Daily />} />
-            <Route path="/daily/:number" element={<ProtectedRoute><PastDaily /></ProtectedRoute>} />
-            <Route path="/archive" element={<ProtectedRoute><Archive /></ProtectedRoute>} />
-            <Route path="/random" element={<ProtectedRoute><Random /></ProtectedRoute>} />
-            <Route path="/custom" element={<ProtectedRoute><Custom /></ProtectedRoute>} />
-            <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/daily/:number" element={<PastDaily />} />
+            <Route path="/archive" element={<Archive />} />
+            <Route path="/random" element={<Random />} />
+            <Route path="/custom" element={<Custom />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Routes>
       </AuthProvider>
