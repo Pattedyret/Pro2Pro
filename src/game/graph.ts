@@ -604,14 +604,14 @@ export class PlayerGraph {
 
   /**
    * Check if a player is notable based on tournament tier data.
-   * A player is notable if they have >= 1 B+ tier tournament or >= 5 CCT tournaments.
+   * A player is notable if they have >= 3 B+ tier tournaments or >= 10 CCT tournaments.
    */
   isNotablePlayer(id: number): boolean {
     // If tier data is loaded, use it
     if (this.playerBPlusCount.size > 0 || this.playerCctCount.size > 0) {
       const bPlus = this.playerBPlusCount.get(id) ?? 0;
       const cct = this.playerCctCount.get(id) ?? 0;
-      return bPlus >= 1 || cct >= 5;
+      return bPlus >= 3 || cct >= 10;
     }
     // Fallback to old notable team logic
     return this.notablePlayerIds.has(id) && (this.playerNotableTeamCount.get(id) ?? 0) >= 2;
@@ -619,16 +619,16 @@ export class PlayerGraph {
 
   /**
    * Get a tier score for a player based on tournament participation.
-   * 4 = A+ (3+ premier), 3 = B+ (1+ broad), 2 = CCT regular (5+), 1 = any CCT, 0 = none
+   * 4 = A+ (10+ premier), 3 = B+ (3+ broad), 2 = CCT regular (10+), 1 = any B+/CCT, 0 = none
    */
   getPlayerTierScore(id: number): number {
     const aPlus = this.playerAPlusCount.get(id) ?? 0;
     const bPlus = this.playerBPlusCount.get(id) ?? 0;
     const cct = this.playerCctCount.get(id) ?? 0;
-    if (aPlus >= 3) return 4;
-    if (bPlus >= 1) return 3;
-    if (cct >= 5) return 2;
-    if (cct >= 1) return 1;
+    if (aPlus >= 10) return 4;
+    if (bPlus >= 3) return 3;
+    if (cct >= 10) return 2;
+    if (bPlus >= 1 || cct >= 1) return 1;
     return 0;
   }
 
@@ -658,12 +658,12 @@ export class PlayerGraph {
     });
   }
 
-  /** Get A+ tier player IDs — players with 5+ premier tournaments (BLAST/PGL/IEM/ESL), excluding female players */
+  /** Get A+ tier player IDs — players with 30+ premier tournaments (BLAST/PGL/IEM/ESL), excluding female players */
   getFamousPlayerIds(): number[] {
     return Array.from(this.players.keys()).filter(id => {
       if ((this.adjacency.get(id)?.size ?? 0) === 0) return false;
       if (this.isFemalePlayer(id)) return false;
-      return (this.playerAPlusCount.get(id) ?? 0) >= 5;
+      return (this.playerAPlusCount.get(id) ?? 0) >= 30;
     });
   }
 

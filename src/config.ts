@@ -17,22 +17,22 @@ export const config = {
   syncIntervalHours: 6,
 
   // Game settings
-  minPathLength: 3,
-  maxPathLength: 6,
+  minPathLength: 2,
+  maxPathLength: 5,
   puzzleRepeatDays: 90,
 
   // Difficulty tiers (daily puzzles)
   difficulty: {
     medium: { minPath: 3, maxPath: 3, label: 'Medium', stars: 2 },
-    hard: { minPath: 4, maxPath: 4, label: 'Hard', stars: 3 },
-    expert: { minPath: 5, maxPath: 6, label: 'Expert', stars: 4 },
+    hard: { minPath: 3, maxPath: 4, label: 'Hard', stars: 3 },
+    expert: { minPath: 4, maxPath: 5, label: 'Expert', stars: 4 },
   },
 
   // Random game difficulty tiers
   randomDifficulty: {
-    easy:   { pool: 'famous' as const, minPaths: 5, minPath: 3, maxPath: 4, label: 'Easy',   emoji: '🟢' },
-    medium: { pool: 'famous' as const, minPaths: 2, minPath: 5, maxPath: 6, label: 'Medium', emoji: '🟡' },
-    hard:   { pool: 'famous' as const, minPaths: 1, minPath: 7, maxPath: 9, label: 'Hard',   emoji: '🔴' },
+    easy:   { pool: 'famous' as const, minPaths: 5, minPath: 2, maxPath: 3, label: 'Easy',   emoji: '🟢' },
+    medium: { pool: 'famous' as const, minPaths: 3, minPath: 3, maxPath: 4, label: 'Medium', emoji: '🟡' },
+    hard:   { pool: 'famous' as const, minPaths: 2, minPath: 4, maxPath: 6, label: 'Hard',   emoji: '🔴' },
   },
 
   // Difficulty rotation: cycles through these
