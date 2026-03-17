@@ -25,9 +25,7 @@ COPY package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# Create data directory for SQLite volume mount
+# Create data directory for SQLite (use Railway volumes for persistence)
 RUN mkdir -p /app/data
-
-VOLUME /app/data
 
 CMD ["node", "dist/index.js"]

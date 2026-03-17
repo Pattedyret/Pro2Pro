@@ -5,15 +5,16 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  EmbedBuilder,
 } from 'discord.js';
 import { handlePro2Pro } from '../commands/pro2pro';
 import { handleCustom, handleAutocomplete } from '../commands/custom';
 import { handleRandom } from '../commands/random';
 import { handleStats } from '../commands/stats';
-import { activeGames, getGameKey, getFullPath, givenUpGames } from './gameState';
+import { activeGames, getGameKey, getFullPath, givenUpGames, originalMessages } from './gameState';
 import { playerGraph } from '../../game/graph';
 import { validateLink } from '../../game/validator';
-import { scorePath } from '../../game/scorer';
+import { scorePath, calculatePar, getGolfRating, formatScoreToPar } from '../../game/scorer';
 import { findShortestPath, findAllShortestPaths } from '../../game/pathfinder';
 import { getTodayPuzzle, getPuzzleById } from '../../data/models/puzzle';
 import { saveUserAttempt, getUserAttempt, saveCustomGameAttempt, recordGiveUp, getUserStats } from '../../data/models/userStats';
@@ -511,12 +512,19 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
     components: [shareRow],
   });
 
-  // Announce completion publicly
+  // Announce completion publicly with golf scoring
+  const par = calculatePar(optimalLength);
+  const scoreToPar = pathLength - par;
+  const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+  const scoreStr = formatScoreToPar(scoreToPar);
   const startName = playerGraph.getPlayerNameWithFlag(game.startPlayerId);
   const endName = playerGraph.getPlayerNameWithFlag(game.endPlayerId);
   await interaction.followUp({
-    content: `**${interaction.user.displayName}** completed **${startName}** to **${endName}** in **${pathLength}** ${pathLength === 1 ? 'step' : 'steps'}!`,
+    content: `${golfEmoji} **${interaction.user.displayName}** scored **${golfRating}** (${scoreStr}) on **${startName}** to **${endName}** — ${pathLength} steps (Par ${par})`,
   });
+
+  // Update the original random game message to show "Completed"
+  await updateOriginalMessage(interaction, game, 'completed', pathLength, optimalLength);
 }
 
 async function handleFinish(interaction: ButtonInteraction, puzzleId: number): Promise<void> {
@@ -704,6 +712,9 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
 
       // Announce publicly
       await interaction.followUp({ content: `**${interaction.user.displayName}** has given up!` });
+
+      // Update the original message to show "Given Up"
+      await updateOriginalMessage(interaction, game, 'givenup');
       return;
     }
   }
@@ -717,5 +728,78 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
   // Announce publicly even when no paths found
   if (game) {
     await interaction.followUp({ content: `**${interaction.user.displayName}** has given up!` });
+    await updateOriginalMessage(interaction, game, 'givenup');
+  }
+}
+
+/**
+ * Update the original /random embed message to show completed or given-up status.
+ * Removes interactive buttons and marks the game as closed.
+ */
+async function updateOriginalMessage(
+  interaction: ButtonInteraction,
+  game: import('./gameState').GameState,
+  status: 'completed' | 'givenup',
+  pathLength?: number,
+  optimalLength?: number
+): Promise<void> {
+  const msgKey = `${game.type}:${game.puzzleId}`;
+  const msgRef = originalMessages.get(msgKey);
+  if (!msgRef) return;
+
+  try {
+    const channel = await interaction.client.channels.fetch(msgRef.channelId);
+    if (!channel || !channel.isTextBased()) return;
+
+    const message = await channel.messages.fetch(msgRef.messageId);
+    if (!message) return;
+
+    const startName = playerGraph.getPlayerNameWithFlag(game.startPlayerId);
+    const endName = playerGraph.getPlayerNameWithFlag(game.endPlayerId);
+
+    // Grab difficulty info from the original embed if available
+    const originalEmbed = message.embeds[0];
+    const originalDesc = originalEmbed?.description ?? '';
+
+    let statusEmoji: string;
+    let statusLabel: string;
+    let color: number;
+    let statusLine: string;
+
+    if (status === 'completed' && pathLength != null && optimalLength != null) {
+      const par = calculatePar(optimalLength);
+      const scoreToPar = pathLength - par;
+      const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+      const scoreStr = formatScoreToPar(scoreToPar);
+      statusEmoji = golfEmoji;
+      statusLabel = `${golfRating} (${scoreStr})`;
+      color = scoreToPar <= 0 ? 0x57F287 : scoreToPar <= 1 ? 0xFEE75C : 0xED4245;
+      statusLine = `${golfEmoji} **${interaction.user.displayName}** — **${pathLength}** steps (Par ${par} | Shortest ${optimalLength})`;
+    } else if (status === 'completed') {
+      statusEmoji = '\u2705';
+      statusLabel = 'Completed';
+      color = 0x57F287;
+      statusLine = `**${interaction.user.displayName}** completed this puzzle`;
+    } else {
+      statusEmoji = '\uD83D\uDEA9';
+      statusLabel = 'Given Up';
+      color = 0xED4245;
+      statusLine = `**${interaction.user.displayName}** gave up on this puzzle`;
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle(`\u26F3 Pro2Pro — ${statusEmoji} ${statusLabel}`)
+      .setDescription(
+        `${startName}  \u2192  ???  \u2192  ${endName}\n\n` +
+        statusLine
+      )
+      .setColor(color);
+
+    await message.edit({ embeds: [embed], components: [] });
+  } catch (err) {
+    // Silently fail — message may have been deleted or permissions changed
+    console.warn('[Handler] Could not update original message:', err);
+  } finally {
+    originalMessages.delete(msgKey);
   }
 }

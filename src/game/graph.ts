@@ -266,6 +266,48 @@ export class PlayerGraph {
   }
 
   /**
+   * Get the number of shared teams between two connected players.
+   * Returns 0 if they are not connected.
+   */
+  getSharedTeamCount(playerA: number, playerB: number): number {
+    const teamIds = this.adjacency.get(playerA)?.get(playerB) ?? [];
+    return new Set(teamIds).size;
+  }
+
+  /**
+   * Score how "obscure" a path is. Higher = more obscure.
+   * Considers: weak links (few shared teams) and non-famous intermediate players.
+   * Returns a score from 0 (well-known links) to 1 (very obscure).
+   */
+  getPathObscurityScore(path: number[]): number {
+    if (path.length < 3) return 0;
+
+    let weakLinkScore = 0;
+    let obscurePlayerScore = 0;
+    const linkCount = path.length - 1;
+    const intermediateCount = path.length - 2;
+
+    // Score links: fewer shared teams = more obscure
+    for (let i = 0; i < linkCount; i++) {
+      const shared = this.getSharedTeamCount(path[i], path[i + 1]);
+      if (shared <= 1) weakLinkScore += 1.0;
+      else if (shared <= 2) weakLinkScore += 0.5;
+    }
+
+    // Score intermediate players: lower tier = more obscure
+    for (let i = 1; i < path.length - 1; i++) {
+      const tier = this.getPlayerTierScore(path[i]);
+      if (tier === 0) obscurePlayerScore += 1.0;
+      else if (tier <= 1) obscurePlayerScore += 0.7;
+      else if (tier <= 2) obscurePlayerScore += 0.3;
+    }
+
+    const linkRatio = linkCount > 0 ? weakLinkScore / linkCount : 0;
+    const playerRatio = intermediateCount > 0 ? obscurePlayerScore / intermediateCount : 0;
+    return (linkRatio + playerRatio) / 2;
+  }
+
+  /**
    * Get player name with country flag emoji, e.g. "🇳🇴 rain"
    */
   getPlayerNameWithFlag(id: number): string {

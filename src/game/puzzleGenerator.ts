@@ -16,11 +16,12 @@ export interface GeneratedPuzzle {
  */
 export function generatePuzzle(difficulty: keyof typeof config.difficulty): GeneratedPuzzle | null {
   const tier = config.difficulty[difficulty];
-  const connectedPlayers = playerGraph.getNotablePlayerIds();
-  const famousPlayers = playerGraph.getFamousPlayerIds();
+  // Daily puzzles also use famous players — fall back to notable only if needed
+  let famousPlayers = playerGraph.getFamousPlayerIds();
+  if (famousPlayers.length < 20) famousPlayers = playerGraph.getNotablePlayerIds();
 
-  if (connectedPlayers.length < 20) {
-    console.error('[PuzzleGen] Not enough notable players to generate puzzle');
+  if (famousPlayers.length < 20) {
+    console.error('[PuzzleGen] Not enough famous/notable players to generate puzzle');
     return null;
   }
 
@@ -41,13 +42,9 @@ export function generatePuzzle(difficulty: keyof typeof config.difficulty): Gene
   // Try random pairs until we find a valid puzzle
   const maxAttempts = 500;
 
-  // Use famous pool if available, otherwise fall back to all notable
-  const famousPool = famousPlayers.length >= 10 ? famousPlayers : connectedPlayers;
-
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Both players from the B+ famous pool
-    const startId = famousPool[Math.floor(Math.random() * famousPool.length)];
-    const endId = famousPool[Math.floor(Math.random() * famousPool.length)];
+    const startId = famousPlayers[Math.floor(Math.random() * famousPlayers.length)];
+    const endId = famousPlayers[Math.floor(Math.random() * famousPlayers.length)];
 
     if (startId === endId) continue;
 

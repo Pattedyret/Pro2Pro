@@ -11,9 +11,10 @@ function resolvePlayer(input: string): PlayerNode | undefined {
   return playerGraph.findPlayerByName(input);
 }
 import { createPuzzleEmbed } from '../interactions/gameEmbed';
-import { activeGames } from '../interactions/gameState';
+import { activeGames, originalMessages } from '../interactions/gameState';
 import { getDb } from '../../data/db';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { calculatePar } from '../../game/scorer';
 
 export async function handleCustom(interaction: ChatInputCommandInteraction): Promise<void> {
   const player1Input = interaction.options.getString('player1', true);
@@ -74,13 +75,14 @@ export async function handleCustom(interaction: ChatInputCommandInteraction): Pr
   const startHint = startTeam ? `${playerGraph.getPlayerNameWithFlag(player1.id)} _(${startTeam})_` : playerGraph.getPlayerNameWithFlag(player1.id);
   const endHint = endTeam ? `${playerGraph.getPlayerNameWithFlag(player2.id)} _(${endTeam})_` : playerGraph.getPlayerNameWithFlag(player2.id);
 
+  const par = calculatePar(result.length);
+
   const embed = new EmbedBuilder()
-    .setTitle(`\uD83C\uDFAE Custom Pro2Pro`)
+    .setTitle(`\u26F3 Custom Pro2Pro`)
     .setDescription(
       `\uD83D\uDFE2 **${startHint}**  \u2192  ???  \u2192  **${endHint}** \uD83D\uDD34\n\n` +
-      `Optimal path: **${result.length}** steps\n` +
-      `Valid shortest paths: **${numPaths}**\n\n` +
-      `_Anyone can play! Click Search Player to start._`
+      `\uD83C\uDFCC\uFE0F Par: **${par}** | Shortest: **${result.length}**\n\n` +
+      `_Anyone can play! Click a button to start._`
     )
     .setColor(0xEB459E);
 
@@ -101,7 +103,8 @@ export async function handleCustom(interaction: ChatInputCommandInteraction): Pr
       .setStyle(ButtonStyle.Danger),
   );
 
-  await interaction.editReply({ embeds: [embed], components: [row] });
+  const message = await interaction.editReply({ embeds: [embed], components: [row] });
+  originalMessages.set(`custom:${customGameId}`, { channelId: interaction.channelId, messageId: message.id });
 }
 
 export async function handleAutocomplete(interaction: AutocompleteInteraction): Promise<void> {

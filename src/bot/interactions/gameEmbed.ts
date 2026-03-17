@@ -10,6 +10,7 @@ import {
 import { playerGraph } from '../../game/graph';
 import { config } from '../../config';
 import { DailyPuzzle } from '../../data/models/puzzle';
+import { calculatePar, formatScoreToPar, getGolfRating } from '../../game/scorer';
 
 /** Build a player name with team hint, e.g. "🇳🇴 s1mple _(Natus Vincere, FaZe)_" */
 function nameWithTeamHint(playerId: number): string {
@@ -30,12 +31,14 @@ export function createPuzzleEmbed(puzzle: DailyPuzzle): { embed: EmbedBuilder; r
   const tier = config.difficulty[puzzle.difficulty as keyof typeof config.difficulty];
   const stars = '\u2B50'.repeat(tier?.stars ?? 2);
 
+  const par = calculatePar(puzzle.optimal_path_length);
+
   const embed = new EmbedBuilder()
-    .setTitle(`\uD83C\uDFAF Pro2Pro Daily #${puzzle.puzzle_number}`)
+    .setTitle(`\u26F3 Pro2Pro Daily #${puzzle.puzzle_number}`)
     .setDescription(
       `Difficulty: ${stars} ${tier?.label ?? puzzle.difficulty}\n\n` +
       `\uD83D\uDFE2 **${startHint}**  \u2192  ???  \u2192  **${endHint}** \uD83D\uDD34\n\n` +
-      `Optimal: **${puzzle.optimal_path_length}** steps\n` +
+      `\uD83C\uDFCC\uFE0F Par: **${par}** | Shortest: **${puzzle.optimal_path_length}**\n` +
       `Your path: _(empty)_`
     )
     .setColor(0x5865F2)
@@ -158,17 +161,20 @@ export function createProgressEmbed(opts: {
   let title: string;
   let description: string;
 
-  const optimalLine = opts.optimalLength != null ? `\nOptimal: **${opts.optimalLength}** steps` : '';
+  const par = opts.optimalLength != null ? calculatePar(opts.optimalLength) : null;
+  const parLine = par != null && opts.optimalLength != null
+    ? `\n\uD83C\uDFCC\uFE0F Par: **${par}** | Shortest: **${opts.optimalLength}**`
+    : '';
 
   if (opts.gameType === 'daily' && opts.puzzleNumber) {
     const stars = '\u2B50'.repeat(opts.difficultyStars ?? 2);
-    title = `\uD83C\uDFAF Pro2Pro Daily #${opts.puzzleNumber}`;
+    title = `\u26F3 Pro2Pro Daily #${opts.puzzleNumber}`;
     description = `Difficulty: ${stars} ${opts.difficulty ?? 'medium'}\n\n` +
       pathDisplay + '\n\n' +
-      `Steps so far: **${stepCount}**` + optimalLine;
+      `Steps so far: **${stepCount}**` + parLine;
   } else {
-    title = `\uD83C\uDFAE Pro2Pro Custom Game`;
-    description = pathDisplay + '\n\n' + `Steps so far: **${stepCount}**` + optimalLine;
+    title = `\u26F3 Pro2Pro Custom Game`;
+    description = pathDisplay + '\n\n' + `Steps so far: **${stepCount}**` + parLine;
   }
 
   const embed = new EmbedBuilder()
@@ -182,7 +188,7 @@ export function createProgressEmbed(opts: {
 }
 
 /**
- * Create the result embed for a completed game.
+ * Create the result embed for a completed game with golf-style scoring.
  */
 export function createResultEmbed(
   puzzleNumber: number,
@@ -195,28 +201,40 @@ export function createResultEmbed(
   difficultyStars: number,
   optimalPathNames?: string[] | null
 ): EmbedBuilder {
+  const par = calculatePar(optimalLength);
+  const scoreToPar = pathLength - par;
+  const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+  const scoreStr = formatScoreToPar(scoreToPar);
   const stars = '\u2B50'.repeat(difficultyStars);
+
+  // Golf-style blocks: green = within par, yellow = over par, red = way over
   const blocks: string[] = [];
   for (let i = 0; i < pathLength; i++) {
-    blocks.push(i < optimalLength ? '\uD83D\uDFE9' : '\uD83D\uDFE8');
+    if (i < par) blocks.push('\uD83D\uDFE9');      // 🟩
+    else if (i < par + 2) blocks.push('\uD83D\uDFE8'); // 🟨
+    else blocks.push('\uD83D\uDFE5');                   // 🟥
   }
 
   let description =
     '**Your path:**\n' +
     pathNames.join(' \u2192 ') + '\n\n' +
-    blocks.join('') + ` (${pathLength} steps)\n\n`;
+    blocks.join('') + '\n\n' +
+    `Shortest: **${optimalLength}** | Par: **${par}** | You: **${pathLength}** (${scoreStr})\n\n`;
 
   if (optimalPathNames && !isOptimal) {
-    description += '**Optimal path:**\n' +
-      optimalPathNames.join(' \u2192 ') + ` (${optimalLength} steps)\n\n`;
+    description += '**Shortest path:**\n' +
+      optimalPathNames.join(' \u2192 ') + '\n\n';
   }
 
   description += `Difficulty: ${difficulty} ${stars}`;
 
+  // Color: green for under par, yellow for par/bogey, red for double bogey+
+  const color = scoreToPar <= 0 ? 0x57F287 : scoreToPar <= 1 ? 0xFEE75C : 0xED4245;
+
   return new EmbedBuilder()
-    .setTitle(`Pro2Pro #${puzzleNumber} \u2014 ${isOptimal ? '\u2B50 ' : ''}${pathLength}/${optimalLength} ${isOptimal ? 'Optimal!' : 'Complete'}`)
+    .setTitle(`\u26F3 Pro2Pro #${puzzleNumber} \u2014 ${golfEmoji} ${golfRating} (${scoreStr})`)
     .setDescription(description)
-    .setColor(isOptimal ? 0x57F287 : 0xFEE75C);
+    .setColor(color);
 }
 
 /**

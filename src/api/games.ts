@@ -11,6 +11,7 @@ import { createWebSession, getWebSession, deleteWebSession } from './webGameStat
 import { awardCompletionPoints } from './points';
 import { config } from '../config';
 import { getFullPath } from '../bot/interactions/gameState';
+import { calculatePar, getGolfRating, formatScoreToPar } from '../game/scorer';
 
 const router = Router();
 
@@ -61,41 +62,25 @@ router.post('/start', authRequired, async (req, res) => {
       return;
     }
 
-    let pool: number[];
-    let secondPool: number[] | null = null;
-    switch (tier.pool) {
-      case 'famous':
-        pool = playerGraph.getFamousPlayerIds();
-        if (pool.length < 20) pool = playerGraph.getNotablePlayerIds();
-        break;
-      case 'notable':
-        pool = playerGraph.getFamousPlayerIds();
-        secondPool = playerGraph.getNotablePlayerIds();
-        if (pool.length < 10) pool = playerGraph.getNotablePlayerIds();
-        if (secondPool.length < 20) secondPool = playerGraph.getConnectedPlayerIds();
-        break;
-      case 'connected':
-        pool = playerGraph.getConnectedPlayerIds();
-        break;
-    }
+    // All difficulties use famous players as start/end — paths just get longer and more complex
+    let pool = playerGraph.getFamousPlayerIds();
+    if (pool.length < 20) pool = playerGraph.getNotablePlayerIds();
 
-    const maxAttempts = difficulty === 'hard' ? 500 : 200;
+    // More attempts for harder difficulties since long paths between famous players are rarer
+    const maxAttempts = difficulty === 'hard' ? 1500 : difficulty === 'medium' ? 400 : 200;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      let startId: number, endId: number;
-      if (secondPool) {
-        const swap = Math.random() < 0.5;
-        const poolA = swap ? secondPool : pool;
-        const poolB = swap ? pool : secondPool;
-        startId = poolA[Math.floor(Math.random() * poolA.length)];
-        endId = poolB[Math.floor(Math.random() * poolB.length)];
-      } else {
-        startId = pool[Math.floor(Math.random() * pool.length)];
-        endId = pool[Math.floor(Math.random() * pool.length)];
-      }
+      const startId = pool[Math.floor(Math.random() * pool.length)];
+      const endId = pool[Math.floor(Math.random() * pool.length)];
       if (startId === endId) continue;
 
       const result = findShortestPath(startId, endId);
       if (!result || result.length < tier.minPath || result.length > tier.maxPath) continue;
+
+      // For hard mode, prefer paths through obscure connections (weak links, lesser-known intermediates)
+      if (difficulty === 'hard') {
+        const obscurity = playerGraph.getPathObscurityScore(result.path);
+        if (obscurity < 0.3) continue; // reject paths that are too "obvious"
+      }
 
       const numPaths = countShortestPaths(startId, endId);
       if (numPaths < tier.minPaths) continue;
@@ -127,6 +112,7 @@ router.post('/start', authRequired, async (req, res) => {
         gameId,
         difficulty: difficulty ?? 'medium',
         optimalPathLength: result.length,
+        par: calculatePar(result.length),
         numValidPaths: numPaths,
         startPlayer: { id: startId, name: startPlayer?.name, nationality: startPlayer?.nationality, imageUrl: startPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(startId, 2) },
         endPlayer: { id: endId, name: endPlayer?.name, nationality: endPlayer?.nationality, imageUrl: endPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(endId, 2) },
@@ -280,6 +266,10 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
       nationality: playerGraph.getPlayer(id)?.nationality,
     }));
 
+    const par = calculatePar(optimalLength);
+    const scoreToPar = pathLength - par;
+    const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+
     res.json({
       valid: true,
       complete: true,
@@ -287,6 +277,11 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
       path: pathNames,
       pathLength,
       optimalLength,
+      par,
+      scoreToPar,
+      scoreToParStr: formatScoreToPar(scoreToPar),
+      golfRating,
+      golfEmoji,
       isOptimal,
       points,
     });

@@ -17,6 +17,10 @@ export const activeGames = new Map<string, GameState>();
 // Track give-ups: "userId:gameType:gameId" — prevents guessing after giving up
 export const givenUpGames = new Set<string>();
 
+// Track original message references so we can update them on completion/give-up
+// Key: "custom:{customGameId}" or "daily:{puzzleId}"
+export const originalMessages = new Map<string, { channelId: string; messageId: string }>();
+
 export function getGameKey(type: 'daily' | 'custom', userId: string, customGameId?: number): string {
   if (type === 'custom' && customGameId !== undefined) {
     return `custom:${userId}:${customGameId}`;

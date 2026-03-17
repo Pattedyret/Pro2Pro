@@ -30,9 +30,9 @@ export const config = {
 
   // Random game difficulty tiers
   randomDifficulty: {
-    easy:   { pool: 'famous'    as const, minPaths: 5, minPath: 2, maxPath: 3, label: 'Easy',   emoji: '🟢' },
-    medium: { pool: 'notable'   as const, minPaths: 3, minPath: 3, maxPath: 4, label: 'Medium', emoji: '🟡' },
-    hard:   { pool: 'connected' as const, minPaths: 1, minPath: 4, maxPath: 6, label: 'Hard',   emoji: '🔴' },
+    easy:   { pool: 'famous' as const, minPaths: 5, minPath: 3, maxPath: 4, label: 'Easy',   emoji: '🟢' },
+    medium: { pool: 'famous' as const, minPaths: 2, minPath: 5, maxPath: 6, label: 'Medium', emoji: '🟡' },
+    hard:   { pool: 'famous' as const, minPaths: 1, minPath: 7, maxPath: 9, label: 'Hard',   emoji: '🔴' },
   },
 
   // Difficulty rotation: cycles through these
@@ -46,7 +46,7 @@ export const config = {
   cctTierOrganizers: ['CCT'] as const,
 
   // Web API
-  apiPort: parseInt(process.env.API_PORT || '3001', 10),
+  apiPort: parseInt(process.env.PORT || process.env.API_PORT || '3001', 10),
   jwtSecret: process.env.JWT_SECRET || 'pro2pro-dev-secret-change-in-prod',
   discordClientSecret: process.env.DISCORD_CLIENT_SECRET || '',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',

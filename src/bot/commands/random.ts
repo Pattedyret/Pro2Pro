@@ -3,6 +3,8 @@ import { playerGraph } from '../../game/graph';
 import { findShortestPath, countShortestPaths } from '../../game/pathfinder';
 import { getDb } from '../../data/db';
 import { config } from '../../config';
+import { originalMessages } from '../interactions/gameState';
+import { calculatePar } from '../../game/scorer';
 
 const difficultyColors = {
   easy: 0x57F287,
@@ -16,51 +18,20 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
   const difficultyKey = (interaction.options.getString('difficulty') ?? 'medium') as keyof typeof config.randomDifficulty;
   const tier = config.randomDifficulty[difficultyKey];
 
-  // Select player pool(s) based on difficulty
-  // Medium uses two pools: one famous + one notable for a mixed-difficulty pair
-  let pool: number[];
-  let secondPool: number[] | null = null;
-  switch (tier.pool) {
-    case 'famous':
-      pool = playerGraph.getFamousPlayerIds();
-      if (pool.length < 20) pool = playerGraph.getNotablePlayerIds();
-      break;
-    case 'notable':
-      // Medium: one famous player + one notable player
-      pool = playerGraph.getFamousPlayerIds();
-      secondPool = playerGraph.getNotablePlayerIds();
-      if (pool.length < 10) pool = playerGraph.getNotablePlayerIds();
-      if (secondPool.length < 20) secondPool = playerGraph.getConnectedPlayerIds();
-      break;
-    case 'connected':
-      pool = playerGraph.getConnectedPlayerIds();
-      break;
-  }
+  // All difficulties use famous players as start/end — paths just get longer and more complex
+  let pool = playerGraph.getFamousPlayerIds();
+  if (pool.length < 20) pool = playerGraph.getNotablePlayerIds();
 
-  const pickPool = secondPool ?? pool;
-  if (pool.length < 10 || pickPool.length < 20) {
+  if (pool.length < 20) {
     await interaction.editReply({ content: 'Not enough players in the database yet.' });
     return;
   }
 
-  const maxAttempts = difficultyKey === 'hard' ? 500 : 200;
+  // More attempts for harder difficulties since long paths between famous players are rarer
+  const maxAttempts = difficultyKey === 'hard' ? 1500 : difficultyKey === 'medium' ? 400 : 200;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // For medium: start from famous pool, end from notable pool (randomize direction)
-    let startId: number;
-    let endId: number;
-    if (secondPool) {
-      const swapDirection = Math.random() < 0.5;
-      const poolA = swapDirection ? secondPool : pool;
-      const poolB = swapDirection ? pool : secondPool;
-      startId = poolA[Math.floor(Math.random() * poolA.length)];
-      endId = poolB[Math.floor(Math.random() * poolB.length)];
-    } else {
-      const startIdx = Math.floor(Math.random() * pool.length);
-      let endIdx = Math.floor(Math.random() * pool.length);
-      if (startIdx === endIdx) continue;
-      startId = pool[startIdx];
-      endId = pool[endIdx];
-    }
+    const startId = pool[Math.floor(Math.random() * pool.length)];
+    const endId = pool[Math.floor(Math.random() * pool.length)];
     if (startId === endId) continue;
 
     const result = findShortestPath(startId, endId);
@@ -68,6 +39,12 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
 
     // Enforce path length constraints
     if (result.length < tier.minPath || result.length > tier.maxPath) continue;
+
+    // For hard mode, prefer paths through obscure connections (weak links, lesser-known intermediates)
+    if (difficultyKey === 'hard') {
+      const obscurity = playerGraph.getPathObscurityScore(result.path);
+      if (obscurity < 0.3) continue; // reject paths that are too "obvious"
+    }
 
     const player1 = playerGraph.getPlayer(startId);
     const player2 = playerGraph.getPlayer(endId);
@@ -104,14 +81,15 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
       ? `${playerGraph.getPlayerNameWithFlag(endId)} _(${endFullTeams.join(', ')})_`
       : playerGraph.getPlayerNameWithFlag(endId);
 
+    const par = calculatePar(result.length);
+
     const embed = new EmbedBuilder()
-      .setTitle(`\uD83C\uDFB2 Random Pro2Pro`)
+      .setTitle(`\u26F3 Random Pro2Pro`)
       .setDescription(
         `${tier.emoji} Difficulty: **${tier.label}**\n\n` +
         `\uD83D\uDFE2 **${startHint}**  \u2192  ???  \u2192  **${endHint}** \uD83D\uDD34\n\n` +
-        `Optimal path: **${result.length}** steps\n` +
-        `Valid shortest paths: **${numPaths}**\n\n` +
-        `_Anyone can play! Click Search Player to start._`
+        `\uD83C\uDFCC\uFE0F Par: **${par}** | Shortest: **${result.length}**\n\n` +
+        `_Anyone can play! Click a button to start._`
       )
       .setColor(difficultyColors[difficultyKey]);
 
@@ -132,7 +110,8 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
         .setStyle(ButtonStyle.Danger),
     );
 
-    await interaction.editReply({ embeds: [embed], components: [row] });
+    const message = await interaction.editReply({ embeds: [embed], components: [row] });
+    originalMessages.set(`custom:${customGameId}`, { channelId: interaction.channelId, messageId: message.id });
     return;
   }
 
