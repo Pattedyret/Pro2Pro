@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../hooks/useGame';
 import { GameBoard } from '../components/GameBoard';
+import { GameModeTabs } from '../components/GameModeTabs';
 import { DifficultyPicker } from '../components/DifficultyPicker';
 
 export function Random() {
@@ -25,7 +26,8 @@ export function Random() {
 
   if (!session && !gameInfo) {
     return (
-      <div className="space-y-8 py-10">
+      <div className="space-y-8 py-4">
+        <GameModeTabs />
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">Random Game</h1>
           <p className="text-gray-400 mt-2">Choose your difficulty</p>
@@ -33,7 +35,7 @@ export function Random() {
         <DifficultyPicker onSelect={handleDifficultySelect} disabled={loading} />
         {loading && (
           <div className="flex justify-center">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         {error && <p className="text-center text-red-400 text-sm">{error}</p>}
@@ -43,6 +45,7 @@ export function Random() {
 
   return (
     <div className="space-y-6">
+      <GameModeTabs />
       <div className="text-center">
         <h1 className="text-2xl font-bold text-white">Random Game</h1>
         {gameInfo?.difficulty && (
@@ -54,6 +57,7 @@ export function Random() {
         <GameBoard
           forwardPath={session.forwardPath}
           backwardPath={session.backwardPath}
+          teamLinks={session.teamLinks}
           complete={session.complete}
           givenUp={session.givenUp}
           result={session.result}
@@ -62,21 +66,13 @@ export function Random() {
           loading={loading}
           onGuess={guess}
           onGiveUp={giveUp}
+          onPlayAgain={handlePlayAgain}
           optimalLength={gameInfo?.optimalPathLength}
           difficulty={gameInfo?.difficulty}
         />
       )}
 
-      {(session?.complete || session?.givenUp) && (
-        <div className="flex justify-center">
-          <button
-            onClick={handlePlayAgain}
-            className="px-6 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-cyan-500/50 transition-all"
-          >
-            Play Again
-          </button>
-        </div>
-      )}
+      {!session?.complete && !session?.givenUp && null}
     </div>
   );
 }

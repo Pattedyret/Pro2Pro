@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useGame } from '../hooks/useGame';
 import { GameBoard } from '../components/GameBoard';
+import { GameModeTabs } from '../components/GameModeTabs';
 import { PlayerSearch } from '../components/PlayerSearch';
+import { PlayerNode } from '../components/PlayerNode';
 
 interface SelectedPlayer {
   id: number;
@@ -37,7 +39,8 @@ export function Custom() {
 
   if (!session) {
     return (
-      <div className="space-y-8 py-10">
+      <div className="space-y-8 py-4">
+        <GameModeTabs />
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">Custom Game</h1>
           <p className="text-gray-400 mt-2">Pick two players and find the connection</p>
@@ -47,9 +50,12 @@ export function Custom() {
           <div>
             <label className="text-sm text-green-400 mb-1 block">Start Player</label>
             {startPlayer ? (
-              <div className="flex items-center gap-3 bg-gray-900/50 border border-green-500/30 rounded-xl px-4 py-3">
-                <span className="text-white font-medium">{startPlayer.name}</span>
-                <button onClick={() => setStartPlayer(null)} className="ml-auto text-gray-500 hover:text-red-400">{'\u2715'}</button>
+              <div className="flex items-center gap-3 bg-[#111118] border border-green-500/30 rounded-xl px-4 py-3">
+                <PlayerNode name={startPlayer.name} imageUrl={startPlayer.imageUrl} variant="start" size="sm" />
+                <span className="text-white font-medium flex-1">{startPlayer.name}</span>
+                <button onClick={() => setStartPlayer(null)} className="text-gray-500 hover:text-red-400 transition-colors">
+                  ✕
+                </button>
               </div>
             ) : (
               <PlayerSearch onSelect={(p) => setStartPlayer(p)} placeholder="Search start player..." />
@@ -59,9 +65,12 @@ export function Custom() {
           <div>
             <label className="text-sm text-red-400 mb-1 block">End Player</label>
             {endPlayer ? (
-              <div className="flex items-center gap-3 bg-gray-900/50 border border-red-500/30 rounded-xl px-4 py-3">
-                <span className="text-white font-medium">{endPlayer.name}</span>
-                <button onClick={() => setEndPlayer(null)} className="ml-auto text-gray-500 hover:text-red-400">{'\u2715'}</button>
+              <div className="flex items-center gap-3 bg-[#111118] border border-red-500/30 rounded-xl px-4 py-3">
+                <PlayerNode name={endPlayer.name} imageUrl={endPlayer.imageUrl} variant="end" size="sm" />
+                <span className="text-white font-medium flex-1">{endPlayer.name}</span>
+                <button onClick={() => setEndPlayer(null)} className="text-gray-500 hover:text-red-400 transition-colors">
+                  ✕
+                </button>
               </div>
             ) : (
               <PlayerSearch onSelect={(p) => setEndPlayer(p)} placeholder="Search end player..." />
@@ -74,7 +83,7 @@ export function Custom() {
             <button
               onClick={handleStart}
               disabled={loading}
-              className="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25 disabled:opacity-50"
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold hover:from-orange-400 hover:to-amber-500 transition-all shadow-lg shadow-orange-500/25 disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Start Game'}
             </button>
@@ -88,10 +97,12 @@ export function Custom() {
 
   return (
     <div className="space-y-6">
+      <GameModeTabs />
       <h1 className="text-2xl font-bold text-center text-white">Custom Game</h1>
       <GameBoard
         forwardPath={session.forwardPath}
         backwardPath={session.backwardPath}
+        teamLinks={session.teamLinks}
         complete={session.complete}
         givenUp={session.givenUp}
         result={session.result}
@@ -100,18 +111,9 @@ export function Custom() {
         loading={loading}
         onGuess={guess}
         onGiveUp={giveUp}
+        onPlayAgain={handlePlayAgain}
         optimalLength={gameInfo?.optimalPathLength}
       />
-      {(session.complete || session.givenUp) && (
-        <div className="flex justify-center">
-          <button
-            onClick={handlePlayAgain}
-            className="px-6 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-cyan-500/50 transition-all"
-          >
-            Play Again
-          </button>
-        </div>
-      )}
     </div>
   );
 }

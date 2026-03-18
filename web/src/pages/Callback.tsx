@@ -27,14 +27,14 @@ export function Callback() {
         <div className="text-6xl">{'\u274C'}</div>
         <h2 className="text-xl font-bold text-red-400">Login Failed</h2>
         <p className="text-gray-400">{error}</p>
-        <a href="/" className="text-cyan-400 hover:underline text-sm">Back to home</a>
+        <a href="/" className="text-orange-400 hover:underline text-sm">Back to home</a>
       </div>
     );
   }
 
   return (
     <div className="text-center py-20 space-y-4">
-      <div className="w-12 h-12 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
+      <div className="w-12 h-12 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
       <h2 className="text-xl font-bold text-white">Logging in...</h2>
       <p className="text-sm text-gray-400">Connecting to Discord</p>
     </div>

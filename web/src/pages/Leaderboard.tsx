@@ -50,7 +50,7 @@ export function Leaderboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -75,7 +75,7 @@ export function Leaderboard() {
         <select
           value={selectedGuild}
           onChange={e => setSelectedGuild(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-gray-900 border border-cyan-500/30 text-white focus:outline-none focus:border-cyan-400"
+          className="px-4 py-2 rounded-xl bg-gray-900 border border-orange-500/30 text-white focus:outline-none focus:border-orange-400"
         >
           {guilds.map(g => (
             <option key={g.guild_id} value={g.guild_id}>{g.guild_name}</option>
@@ -85,7 +85,7 @@ export function Leaderboard() {
 
       {loadingBoard ? (
         <div className="flex justify-center">
-          <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : leaderboard.length === 0 ? (
         <div className="text-center py-10 text-gray-400">No data yet for this server</div>
@@ -114,7 +114,7 @@ export function Leaderboard() {
                     )}
                   </td>
                   <td className="py-3 px-2 font-medium">{entry.username}</td>
-                  <td className="py-3 px-2 text-right font-mono text-cyan-400">{entry.totalPoints}</td>
+                  <td className="py-3 px-2 text-right font-mono text-orange-400">{entry.totalPoints}</td>
                   <td className="py-3 px-2 text-right hidden sm:table-cell text-gray-400">{entry.gamesPlayed}</td>
                   <td className="py-3 px-2 text-right hidden sm:table-cell text-gray-400">{entry.gamesWon}</td>
                   <td className="py-3 px-2 text-right hidden md:table-cell text-gray-400">{entry.currentStreak}</td>

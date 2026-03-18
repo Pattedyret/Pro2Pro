@@ -11,13 +11,13 @@ interface PuzzleEntry {
 }
 
 const statusStyles: Record<string, string> = {
-  available: 'border-gray-700 hover:border-cyan-500/50',
+  available: 'border-gray-700 hover:border-orange-500/50',
   completed: 'border-green-500/30 bg-green-500/5',
   optimal: 'border-yellow-500/30 bg-yellow-500/5',
 };
 
 const statusBadge: Record<string, { text: string; color: string }> = {
-  available: { text: 'Play', color: 'text-cyan-400' },
+  available: { text: 'Play', color: 'text-orange-400' },
   completed: { text: '\u2705', color: 'text-green-400' },
   optimal: { text: '\uD83C\uDFC6', color: 'text-yellow-400' },
 };
@@ -36,7 +36,7 @@ export function Archive() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
