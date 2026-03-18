@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { PlayerSearch } from './PlayerSearch';
-import { PathDisplay } from './PathDisplay';
+import { PlayerNode } from './PlayerNode';
+import { ConnectionGraph } from './ConnectionGraph';
+import { CompletionScreen } from './CompletionScreen';
+import { GiveUpScreen } from './GiveUpScreen';
+import type { TeamLink } from '../hooks/useGame';
 
 interface Player {
   id: number;
   name: string;
   nationality?: string;
+  imageUrl?: string;
 }
 
 interface GameBoardProps {
   forwardPath: Player[];
   backwardPath: Player[];
+  teamLinks: TeamLink[];
   complete: boolean;
   givenUp: boolean;
   result: any | null;
@@ -19,6 +25,7 @@ interface GameBoardProps {
   loading: boolean;
   onGuess: (playerId: number, direction: 'forward' | 'backward') => void;
   onGiveUp: () => void;
+  onPlayAgain?: () => void;
   optimalLength?: number;
   difficulty?: string;
 }
@@ -26,6 +33,7 @@ interface GameBoardProps {
 export function GameBoard({
   forwardPath,
   backwardPath,
+  teamLinks,
   complete,
   givenUp,
   result,
@@ -34,6 +42,7 @@ export function GameBoard({
   loading,
   onGuess,
   onGiveUp,
+  onPlayAgain,
   optimalLength,
   difficulty,
 }: GameBoardProps) {
@@ -41,74 +50,64 @@ export function GameBoard({
 
   if (complete && result) {
     return (
-      <div className="text-center space-y-6">
-        <div className="text-6xl mb-4">{result.isOptimal ? '\uD83C\uDFC6' : '\uD83C\uDF89'}</div>
-        <h2 className="text-2xl font-bold text-cyan-400">
-          {result.isOptimal ? 'Optimal!' : 'Completed!'}
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
-          <div className="bg-gray-900/50 border border-cyan-500/20 rounded-xl p-4">
-            <div className="text-2xl font-mono font-bold text-white">{result.pathLength}</div>
-            <div className="text-xs text-gray-400">Steps</div>
-          </div>
-          <div className="bg-gray-900/50 border border-cyan-500/20 rounded-xl p-4">
-            <div className="text-2xl font-mono font-bold text-white">{result.optimalLength}</div>
-            <div className="text-xs text-gray-400">Optimal</div>
-          </div>
-          <div className="bg-gray-900/50 border border-cyan-500/20 rounded-xl p-4">
-            <div className="text-2xl font-mono font-bold text-cyan-400">{result.points?.total ?? 0}</div>
-            <div className="text-xs text-gray-400">Points</div>
-          </div>
-          {difficulty && (
-            <div className="bg-gray-900/50 border border-cyan-500/20 rounded-xl p-4">
-              <div className="text-2xl font-mono font-bold text-white capitalize">{difficulty}</div>
-              <div className="text-xs text-gray-400">Difficulty</div>
-            </div>
-          )}
-        </div>
-        {result.points?.breakdown && (
-          <div className="max-w-xs mx-auto space-y-1">
-            {result.points.breakdown.map((b: any, i: number) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span className="text-gray-400 capitalize">{b.reason}</span>
-                <span className="text-cyan-400 font-mono">+{b.points}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <PathDisplay forwardPath={result.path ?? forwardPath} backwardPath={[]} complete={true} />
-      </div>
+      <CompletionScreen
+        result={result}
+        teamLinks={teamLinks}
+        difficulty={difficulty}
+        onPlayAgain={onPlayAgain}
+      />
     );
   }
 
   if (givenUp && solutions) {
-    return (
-      <div className="text-center space-y-6">
-        <div className="text-6xl mb-4">{'\uD83D\uDE14'}</div>
-        <h2 className="text-2xl font-bold text-red-400">Given Up</h2>
-        <div className="space-y-4">
-          <h3 className="text-sm text-gray-400">Solution{solutions.length > 1 ? 's' : ''}:</h3>
-          {solutions.map((path, idx) => (
-            <div key={idx} className="bg-gray-900/50 border border-gray-700 rounded-xl p-4">
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                {path.map((p: any, i: number) => (
-                  <span key={p.id ?? i} className="flex items-center gap-1">
-                    <span className="text-sm text-white">{p.name || '???'}</span>
-                    {i < path.length - 1 && <span className="text-gray-500 mx-1">{'\u2192'}</span>}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <GiveUpScreen solutions={solutions} onPlayAgain={onPlayAgain} />;
   }
+
+  const startPlayer = forwardPath[0];
+  const endPlayer = backwardPath[0];
+  const par = optimalLength ? optimalLength + 2 : undefined;
+  const totalSteps = (forwardPath.length - 1) + (backwardPath.length - 1);
 
   return (
     <div className="space-y-6">
-      {/* Path visualization */}
-      <PathDisplay forwardPath={forwardPath} backwardPath={backwardPath} />
+      {/* Goalposts — start and end players */}
+      <div className="flex items-start justify-center gap-8 sm:gap-16">
+        <div className="text-center">
+          <PlayerNode
+            name={startPlayer?.name ?? '?'}
+            imageUrl={startPlayer?.imageUrl}
+            nationality={startPlayer?.nationality}
+            variant="start"
+            size="lg"
+          />
+        </div>
+        <div className="flex items-center pt-6 text-gray-600">
+          <div className="flex gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+          </div>
+        </div>
+        <div className="text-center">
+          <PlayerNode
+            name={endPlayer?.name ?? '?'}
+            imageUrl={endPlayer?.imageUrl}
+            nationality={endPlayer?.nationality}
+            variant="end"
+            size="lg"
+          />
+        </div>
+      </div>
+
+      {/* Connection graph */}
+      {(forwardPath.length > 1 || backwardPath.length > 1) && (
+        <ConnectionGraph
+          forwardPath={forwardPath}
+          backwardPath={backwardPath}
+          teamLinks={teamLinks}
+          complete={false}
+        />
+      )}
 
       {/* Direction toggle */}
       <div className="flex justify-center gap-2">
@@ -116,21 +115,21 @@ export function GameBoard({
           onClick={() => setDirection('forward')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             direction === 'forward'
-              ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-400'
-              : 'bg-gray-900/50 border border-gray-700 text-gray-400 hover:text-white'
+              ? 'bg-orange-500/15 border border-orange-500/40 text-orange-400'
+              : 'bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white'
           }`}
         >
-          Add from Start {'\u2192'}
+          From Start →
         </button>
         <button
           onClick={() => setDirection('backward')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             direction === 'backward'
-              ? 'bg-purple-500/20 border border-purple-500/50 text-purple-400'
-              : 'bg-gray-900/50 border border-gray-700 text-gray-400 hover:text-white'
+              ? 'bg-orange-500/15 border border-orange-500/40 text-orange-400'
+              : 'bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white'
           }`}
         >
-          {'\u2190'} Add from End
+          ← From End
         </button>
       </div>
 
@@ -138,7 +137,7 @@ export function GameBoard({
       <div className="flex justify-center">
         <PlayerSearch
           onSelect={(player) => onGuess(player.id, direction)}
-          placeholder={`Search player to add ${direction === 'forward' ? 'after start' : 'before end'}...`}
+          placeholder={`Search player to add ${direction === 'forward' ? 'after start chain' : 'before end chain'}...`}
           disabled={loading}
         />
       </div>
@@ -150,9 +149,17 @@ export function GameBoard({
         </div>
       )}
 
-      {/* Info bar */}
+      {/* Stats bar */}
       <div className="flex justify-center items-center gap-6 text-sm text-gray-400">
-        {optimalLength && <span>Optimal: <span className="text-cyan-400 font-mono">{optimalLength}</span> steps</span>}
+        {par != null && (
+          <span>Par: <span className="text-orange-400 font-mono">{par}</span></span>
+        )}
+        {optimalLength != null && (
+          <span>Optimal: <span className="text-orange-400 font-mono">{optimalLength}</span></span>
+        )}
+        {totalSteps > 0 && (
+          <span>Steps: <span className="text-white font-mono">{totalSteps}</span></span>
+        )}
         <button
           onClick={onGiveUp}
           disabled={loading}

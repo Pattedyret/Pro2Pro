@@ -6,19 +6,19 @@ import { findShortestPath, countShortestPaths, findAllShortestPaths } from '../g
 import { validateLink } from '../game/validator';
 import { getPuzzleByNumber, getTodayPuzzle, getPuzzleById } from '../data/models/puzzle';
 import { getUserAttempt, saveUserAttempt, getUserStats } from '../data/models/userStats';
-import { authRequired } from './middleware';
+import { authRequired, authOptional } from './middleware';
 import { createWebSession, getWebSession, updateWebSession, deleteWebSession } from './webGameState';
 import { awardCompletionPoints } from './points';
 import { config } from '../config';
 import { getFullPath } from '../bot/interactions/gameState';
-import { calculatePar, getGolfRating, formatScoreToPar } from '../game/scorer';
+import { calculatePar, getGameRating, formatScoreToPar } from '../game/scorer';
 
 const router = Router();
 
 // POST /games/start — start a game session
-router.post('/start', authRequired, async (req, res) => {
+router.post('/start', authOptional, async (req, res) => {
   const { mode, puzzleNumber, difficulty, startPlayerId, endPlayerId } = req.body;
-  const userId = req.user!.userId;
+  const userId = req.user?.userId ?? `anon-${req.headers['x-session-id'] ?? 'unknown'}`;
 
   if (mode === 'daily') {
     const puzzle = puzzleNumber ? getPuzzleByNumber(puzzleNumber) : getTodayPuzzle();
@@ -27,11 +27,13 @@ router.post('/start', authRequired, async (req, res) => {
       return;
     }
 
-    // Check if already completed
-    const existing = getUserAttempt(puzzle.id, userId);
-    if (existing) {
-      res.status(409).json({ error: 'Already completed this puzzle', attempt: existing });
-      return;
+    // Check if already completed (only for authenticated users)
+    if (req.user) {
+      const existing = getUserAttempt(puzzle.id, userId);
+      if (existing) {
+        res.status(409).json({ error: 'Already completed this puzzle', attempt: existing });
+        return;
+      }
     }
 
     const sessionId = crypto.randomUUID();
@@ -175,10 +177,10 @@ router.post('/start', authRequired, async (req, res) => {
 });
 
 // POST /games/:sessionId/guess — submit a guess
-router.post('/:sessionId/guess', authRequired, (req, res) => {
+router.post('/:sessionId/guess', authOptional, (req, res) => {
   const sessionId = req.params.sessionId as string;
   const { playerId, direction } = req.body;
-  const userId = req.user!.userId;
+  const userId = req.user?.userId ?? `anon-${req.headers['x-session-id'] ?? 'unknown'}`;
 
   const game = getWebSession(sessionId, userId);
   if (!game) {
@@ -208,7 +210,10 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
   if (dir === 'forward') game.forwardPath.push(playerId);
   else game.backwardPath.push(playerId);
 
-  const teamNames = validation.sharedTeams.map(t => t.teamAcronym ?? t.teamName);
+  const teamInfo = validation.sharedTeams.map(t => ({
+    name: t.teamAcronym ?? t.teamName,
+    imageUrl: t.teamImageUrl,
+  }));
 
   // Check completion
   let isComplete = false;
@@ -232,31 +237,36 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
       optimalLength = puzzle?.optimal_path_length ?? pathLength;
       difficulty = puzzle?.difficulty;
 
-      saveUserAttempt({
-        puzzleId: game.puzzleId,
-        userId,
-        guildId: null,
-        path: fullPath,
-        pathLength,
-        isValid: true,
-        isOptimal: pathLength === optimalLength,
-      });
+      if (req.user) {
+        saveUserAttempt({
+          puzzleId: game.puzzleId,
+          userId,
+          guildId: null,
+          path: fullPath,
+          pathLength,
+          isValid: true,
+          isOptimal: pathLength === optimalLength,
+        });
+      }
     } else {
       const shortest = findShortestPath(game.startPlayerId, game.endPlayerId);
       optimalLength = shortest?.length ? shortest.length - 1 : pathLength;
     }
 
     const isOptimal = pathLength === optimalLength;
-    const stats = getUserStats(userId);
-    const points = awardCompletionPoints({
-      userId,
-      source: 'web',
-      puzzleId: game.type === 'daily' ? game.puzzleId : undefined,
-      customGameId: game.type === 'custom' ? game.puzzleId : undefined,
-      isOptimal,
-      difficulty,
-      currentStreak: stats.current_streak,
-    });
+    let points: any = null;
+    if (req.user) {
+      const stats = getUserStats(userId);
+      points = awardCompletionPoints({
+        userId,
+        source: 'web',
+        puzzleId: game.type === 'daily' ? game.puzzleId : undefined,
+        customGameId: game.type === 'custom' ? game.puzzleId : undefined,
+        isOptimal,
+        difficulty,
+        currentStreak: stats.current_streak,
+      });
+    }
 
     deleteWebSession(sessionId);
 
@@ -264,24 +274,40 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
       id,
       name: playerGraph.getPlayer(id)?.name ?? '???',
       nationality: playerGraph.getPlayer(id)?.nationality,
+      imageUrl: playerGraph.getPlayer(id)?.imageUrl ?? null,
     }));
+
+    // Build full team connection data for each link in the path
+    const pathTeamLinks = [];
+    for (let i = 0; i < fullPath.length - 1; i++) {
+      const shared = playerGraph.getSharedTeams(fullPath[i], fullPath[i + 1]);
+      pathTeamLinks.push({
+        fromId: fullPath[i],
+        toId: fullPath[i + 1],
+        teams: shared.map(t => ({
+          name: t.teamAcronym ?? t.teamName,
+          fullName: t.teamName,
+          imageUrl: t.teamImageUrl,
+        })),
+      });
+    }
 
     const par = calculatePar(optimalLength);
     const scoreToPar = pathLength - par;
-    const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+    const rating = getGameRating(scoreToPar);
 
     res.json({
       valid: true,
       complete: true,
-      teams: teamNames,
+      teams: teamInfo,
       path: pathNames,
+      pathTeamLinks,
       pathLength,
       optimalLength,
       par,
       scoreToPar,
       scoreToParStr: formatScoreToPar(scoreToPar),
-      golfRating,
-      golfEmoji,
+      rating,
       isOptimal,
       points,
     });
@@ -295,17 +321,23 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
   res.json({
     valid: true,
     complete: false,
-    teams: teamNames,
-    player: { id: playerId, name: player?.name ?? '???', nationality: player?.nationality },
-    forwardPath: game.forwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
-    backwardPath: game.backwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
+    teams: teamInfo,
+    player: { id: playerId, name: player?.name ?? '???', nationality: player?.nationality, imageUrl: player?.imageUrl ?? null },
+    forwardPath: game.forwardPath.map(id => {
+      const p = playerGraph.getPlayer(id);
+      return { id, name: p?.name ?? '???', nationality: p?.nationality, imageUrl: p?.imageUrl ?? null };
+    }),
+    backwardPath: game.backwardPath.map(id => {
+      const p = playerGraph.getPlayer(id);
+      return { id, name: p?.name ?? '???', nationality: p?.nationality, imageUrl: p?.imageUrl ?? null };
+    }),
   });
 });
 
 // POST /games/:sessionId/giveup
-router.post('/:sessionId/giveup', authRequired, (req, res) => {
+router.post('/:sessionId/giveup', authOptional, (req, res) => {
   const sessionId = req.params.sessionId as string;
-  const userId = req.user!.userId;
+  const userId = req.user?.userId ?? `anon-${req.headers['x-session-id'] ?? 'unknown'}`;
 
   const game = getWebSession(sessionId, userId);
   if (!game) {
@@ -316,8 +348,8 @@ router.post('/:sessionId/giveup', authRequired, (req, res) => {
   const allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
   deleteWebSession(sessionId);
 
-  // Mark daily as attempted (given up) so they can't replay
-  if (game.type === 'daily') {
+  // Mark daily as attempted (given up) so they can't replay (auth'd users only)
+  if (game.type === 'daily' && req.user) {
     const db = getDb();
     try {
       db.prepare(`

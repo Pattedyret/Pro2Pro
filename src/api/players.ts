@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { playerGraph } from '../game/graph';
-import { authRequired } from './middleware';
+import { authOptional } from './middleware';
 
 const router = Router();
 
 // GET /players/search?q=...
-router.get('/search', authRequired, (req, res) => {
+router.get('/search', authOptional, (req, res) => {
   const query = ((req.query.q as string) ?? '').trim();
   if (query.length < 1) {
     res.json({ players: [] });

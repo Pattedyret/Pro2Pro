@@ -10,7 +10,7 @@ import {
 import { playerGraph } from '../../game/graph';
 import { config } from '../../config';
 import { DailyPuzzle } from '../../data/models/puzzle';
-import { calculatePar, formatScoreToPar, getGolfRating } from '../../game/scorer';
+import { calculatePar, formatScoreToPar, getGameRating } from '../../game/scorer';
 
 /** Build a player name with team hint, e.g. "🇳🇴 s1mple _(Natus Vincere, FaZe)_" */
 function nameWithTeamHint(playerId: number): string {
@@ -203,11 +203,10 @@ export function createResultEmbed(
 ): EmbedBuilder {
   const par = calculatePar(optimalLength);
   const scoreToPar = pathLength - par;
-  const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+  const rating = getGameRating(scoreToPar);
   const scoreStr = formatScoreToPar(scoreToPar);
   const stars = '\u2B50'.repeat(difficultyStars);
 
-  // Golf-style blocks: green = within par, yellow = over par, red = way over
   const blocks: string[] = [];
   for (let i = 0; i < pathLength; i++) {
     if (i < par) blocks.push('\uD83D\uDFE9');      // 🟩
@@ -228,11 +227,10 @@ export function createResultEmbed(
 
   description += `Difficulty: ${difficulty} ${stars}`;
 
-  // Color: green for under par, yellow for par/bogey, red for double bogey+
   const color = scoreToPar <= 0 ? 0x57F287 : scoreToPar <= 1 ? 0xFEE75C : 0xED4245;
 
   return new EmbedBuilder()
-    .setTitle(`\u26F3 Pro2Pro #${puzzleNumber} \u2014 ${golfEmoji} ${golfRating} (${scoreStr})`)
+    .setTitle(`Pro2Pro #${puzzleNumber} \u2014 ${rating} (${scoreStr})`)
     .setDescription(description)
     .setColor(color);
 }

@@ -77,16 +77,16 @@ export function PlayerSearch({ onSelect, placeholder = 'Search player...', disab
         onFocus={() => results.length > 0 && setShowResults(true)}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full px-4 py-3 rounded-xl bg-gray-900/80 border border-cyan-500/30 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50 transition-all backdrop-blur-sm"
+        className="w-full px-4 py-3 rounded-xl bg-gray-900/80 border border-orange-500/30 text-white placeholder-gray-500 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400/50 transition-all backdrop-blur-sm"
       />
       {searching && (
         <div className="absolute right-3 top-3.5">
-          <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {showResults && results.length > 0 && (
-        <div className="absolute top-full mt-2 w-full bg-gray-900/95 border border-cyan-500/20 rounded-xl backdrop-blur-xl shadow-2xl shadow-cyan-500/10 max-h-80 overflow-y-auto z-50">
+        <div className="absolute top-full mt-2 w-full bg-gray-900/95 border border-orange-500/20 rounded-xl backdrop-blur-xl shadow-2xl shadow-orange-500/10 max-h-80 overflow-y-auto z-50">
           {fuzzy && (
             <div className="px-4 py-2 text-xs text-yellow-400 border-b border-gray-800">
               Did you mean...
@@ -96,7 +96,7 @@ export function PlayerSearch({ onSelect, placeholder = 'Search player...', disab
             <button
               key={player.id}
               onClick={() => handleSelect(player)}
-              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-cyan-500/10 transition-colors text-left border-b border-gray-800/50 last:border-0"
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-orange-500/10 transition-colors text-left border-b border-gray-800/50 last:border-0"
             >
               {player.imageUrl ? (
                 <img src={player.imageUrl} alt="" className="w-8 h-8 rounded-full bg-gray-800" />
@@ -118,7 +118,7 @@ export function PlayerSearch({ onSelect, placeholder = 'Search player...', disab
       )}
 
       {showResults && query.length >= 1 && !searching && results.length === 0 && (
-        <div className="absolute top-full mt-2 w-full bg-gray-900/95 border border-cyan-500/20 rounded-xl backdrop-blur-xl p-4 text-center text-sm text-gray-400">
+        <div className="absolute top-full mt-2 w-full bg-gray-900/95 border border-orange-500/20 rounded-xl backdrop-blur-xl p-4 text-center text-sm text-gray-400">
           No players found
         </div>
       )}

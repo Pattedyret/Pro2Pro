@@ -5,12 +5,25 @@ interface Player {
   id: number;
   name: string;
   nationality?: string;
+  imageUrl?: string;
 }
 
-interface GameSession {
+interface TeamInfo {
+  name: string;
+  imageUrl: string | null;
+}
+
+export interface TeamLink {
+  fromId: number;
+  toId: number;
+  teams: TeamInfo[];
+}
+
+export interface GameSession {
   sessionId: string;
   forwardPath: Player[];
   backwardPath: Player[];
+  teamLinks: TeamLink[];
   complete: boolean;
   givenUp: boolean;
   result: any | null;
@@ -30,6 +43,7 @@ export function useGame() {
         sessionId: data.sessionId,
         forwardPath: [data.startPlayer ?? { id: 0, name: '?' }],
         backwardPath: [data.endPlayer ?? { id: 0, name: '?' }],
+        teamLinks: [],
         complete: false,
         givenUp: false,
         result: null,
@@ -54,13 +68,43 @@ export function useGame() {
         setSession(prev => prev ? { ...prev, error: data.error } : null);
         return data;
       }
+
+      // Build team link from the guess response
+      const chain = direction === 'forward' ? session.forwardPath : session.backwardPath;
+      const lastPlayer = chain[chain.length - 1];
+      const newTeamLink: TeamLink = {
+        fromId: lastPlayer.id,
+        toId: playerId,
+        teams: (data.teams ?? []).map((t: any) => ({
+          name: typeof t === 'string' ? t : t.name,
+          imageUrl: typeof t === 'string' ? null : t.imageUrl ?? null,
+        })),
+      };
+
       if (data.complete) {
-        setSession(prev => prev ? { ...prev, complete: true, result: data, error: null } : null);
+        setSession(prev => prev ? {
+          ...prev,
+          complete: true,
+          result: data,
+          teamLinks: [...prev.teamLinks, newTeamLink],
+          error: null,
+        } : null);
       } else {
         setSession(prev => prev ? {
           ...prev,
-          forwardPath: data.forwardPath,
-          backwardPath: data.backwardPath,
+          forwardPath: data.forwardPath?.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            nationality: p.nationality,
+            imageUrl: p.imageUrl,
+          })) ?? prev.forwardPath,
+          backwardPath: data.backwardPath?.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            nationality: p.nationality,
+            imageUrl: p.imageUrl,
+          })) ?? prev.backwardPath,
+          teamLinks: [...prev.teamLinks, newTeamLink],
           error: null,
         } : null);
       }
