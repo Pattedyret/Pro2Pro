@@ -322,9 +322,15 @@ router.post('/:sessionId/guess', authOptional, (req, res) => {
     valid: true,
     complete: false,
     teams: teamInfo,
-    player: { id: playerId, name: player?.name ?? '???', nationality: player?.nationality },
-    forwardPath: game.forwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
-    backwardPath: game.backwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
+    player: { id: playerId, name: player?.name ?? '???', nationality: player?.nationality, imageUrl: player?.imageUrl ?? null },
+    forwardPath: game.forwardPath.map(id => {
+      const p = playerGraph.getPlayer(id);
+      return { id, name: p?.name ?? '???', nationality: p?.nationality, imageUrl: p?.imageUrl ?? null };
+    }),
+    backwardPath: game.backwardPath.map(id => {
+      const p = playerGraph.getPlayer(id);
+      return { id, name: p?.name ?? '???', nationality: p?.nationality, imageUrl: p?.imageUrl ?? null };
+    }),
   });
 });
 
