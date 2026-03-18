@@ -14,7 +14,7 @@ import { handleStats } from '../commands/stats';
 import { activeGames, getGameKey, getFullPath, givenUpGames, originalMessages } from './gameState';
 import { playerGraph } from '../../game/graph';
 import { validateLink } from '../../game/validator';
-import { scorePath, calculatePar, getGolfRating, formatScoreToPar } from '../../game/scorer';
+import { scorePath, calculatePar, getGameRating, formatScoreToPar } from '../../game/scorer';
 import { findShortestPath, findAllShortestPaths } from '../../game/pathfinder';
 import { getTodayPuzzle, getPuzzleById } from '../../data/models/puzzle';
 import { saveUserAttempt, getUserAttempt, saveCustomGameAttempt, recordGiveUp, getUserStats } from '../../data/models/userStats';
@@ -512,15 +512,15 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
     components: [shareRow],
   });
 
-  // Announce completion publicly with golf scoring
+  // Announce completion publicly
   const par = calculatePar(optimalLength);
   const scoreToPar = pathLength - par;
-  const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+  const rating = getGameRating(scoreToPar);
   const scoreStr = formatScoreToPar(scoreToPar);
   const startName = playerGraph.getPlayerNameWithFlag(game.startPlayerId);
   const endName = playerGraph.getPlayerNameWithFlag(game.endPlayerId);
   await interaction.followUp({
-    content: `${golfEmoji} **${interaction.user.displayName}** scored **${golfRating}** (${scoreStr}) on **${startName}** to **${endName}** — ${pathLength} steps (Par ${par})`,
+    content: `**${interaction.user.displayName}** scored **${rating}** (${scoreStr}) on **${startName}** to **${endName}** — ${pathLength} steps (Par ${par})`,
   });
 
   // Update the original random game message to show "Completed"
@@ -762,9 +762,9 @@ async function updateOriginalMessage(
     if (status === 'completed' && pathLength != null && optimalLength != null) {
       const par = calculatePar(optimalLength);
       const scoreToPar = pathLength - par;
-      const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
+      const rating = getGameRating(scoreToPar);
       const scoreStr = formatScoreToPar(scoreToPar);
-      scoreLine = `${golfEmoji} **${interaction.user.displayName}** — ${golfRating} (${scoreStr}) | ${pathLength} steps`;
+      scoreLine = `**${interaction.user.displayName}** — ${rating} (${scoreStr}) | ${pathLength} steps`;
     } else if (status === 'completed') {
       scoreLine = `\u2705 **${interaction.user.displayName}** — Completed`;
     } else {

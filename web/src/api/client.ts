@@ -16,10 +16,20 @@ export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
+function getAnonSessionId(): string {
+  let id = localStorage.getItem('pro2pro_anon_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('pro2pro_anon_id', id);
+  }
+  return id;
+}
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'x-session-id': getAnonSessionId(),
     ...((options.headers as Record<string, string>) ?? {}),
   };
   if (token) {
@@ -28,7 +38,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401) {
+  if (res.status === 401 && token) {
     clearToken();
     window.location.href = '/Pro2Pro/';
     throw new Error('Session expired');

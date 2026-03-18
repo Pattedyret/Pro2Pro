@@ -54,6 +54,7 @@ export interface TeamConnection {
   teamId: number;
   teamName: string;
   teamAcronym: string | null;
+  teamImageUrl: string | null;
 }
 
 /**
@@ -65,7 +66,7 @@ export class PlayerGraph {
   // adjacency list: playerId -> Map<playerId, teamIds[]>
   private adjacency = new Map<number, Map<number, number[]>>();
   private players = new Map<number, PlayerNode>();
-  private teams = new Map<number, { name: string; acronym: string | null }>();
+  private teams = new Map<number, { name: string; acronym: string | null; imageUrl: string | null }>();
   private playerNameIndex = new Map<string, number[]>(); // lowercase name -> ids (multiple for dupes)
   private playerNormalizedIndex = new Map<string, number[]>(); // normalized name -> ids
   private playerNormalizedName = new Map<number, string>(); // playerId -> normalized name (for sort perf)
@@ -128,11 +129,11 @@ export class PlayerGraph {
     }
 
     // Load teams
-    const teamRows = db.prepare('SELECT id, name, acronym, is_notable FROM teams').all() as any[];
+    const teamRows = db.prepare('SELECT id, name, acronym, is_notable, image_url FROM teams').all() as any[];
     this.teams.clear();
     this.notableTeamIds.clear();
     for (const row of teamRows) {
-      this.teams.set(row.id, { name: row.name, acronym: row.acronym });
+      this.teams.set(row.id, { name: row.name, acronym: row.acronym, imageUrl: row.image_url ?? null });
       if (row.is_notable) this.notableTeamIds.add(row.id);
     }
 
@@ -273,6 +274,7 @@ export class PlayerGraph {
         teamId: id,
         teamName: team?.name ?? 'Unknown',
         teamAcronym: team?.acronym ?? null,
+        teamImageUrl: team?.imageUrl ?? null,
       };
     });
   }
