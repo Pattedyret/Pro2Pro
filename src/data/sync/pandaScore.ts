@@ -114,8 +114,9 @@ export class PandaScoreSync {
     db.exec(`
       DELETE FROM rosters;
       DELETE FROM player_tournament_counts;
+      UPDATE players SET is_female = 0;
     `);
-    console.log(`[Sync] Cleared ${rosterCount} roster rows and tier counts (${playerCount} players kept for reference)`);
+    console.log(`[Sync] Cleared ${rosterCount} roster rows, tier counts, and female flags (${playerCount} players kept for reference)`);
 
     return this.syncAll();
   }
