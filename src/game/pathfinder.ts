@@ -83,8 +83,9 @@ export function countShortestPaths(startId: number, endId: number): number {
 }
 
 /**
- * Find a path between two players where no team is reused in consecutive links.
- * Uses DFS with depth limit. Returns null if no multi-team path exists within maxDepth.
+ * Find a path between two players where no team is reused across ANY link.
+ * Once a team connects two players, it's banned for the rest of the path.
+ * Uses DFS with depth limit. Returns null if no such path exists within maxDepth.
  */
 export function findMultiTeamPath(
   startId: number,
@@ -93,8 +94,8 @@ export function findMultiTeamPath(
 ): PathResult | null {
   let bestPath: number[] | null = null;
 
-  function dfs(current: number, path: number[], visited: Set<number>, prevTeams: Set<number>): void {
-    if (bestPath && path.length >= bestPath.length) return; // prune if already found shorter
+  function dfs(current: number, path: number[], visited: Set<number>, usedTeams: Set<number>): void {
+    if (bestPath && path.length >= bestPath.length) return;
     if (path.length - 1 > maxDepth) return;
 
     if (current === endId) {
@@ -105,24 +106,24 @@ export function findMultiTeamPath(
     for (const neighbor of playerGraph.getNeighbors(current)) {
       if (visited.has(neighbor)) continue;
 
-      // Get teams for this edge
       const edgeTeams = playerGraph.getSharedTeamIds(current, neighbor);
       if (!edgeTeams || edgeTeams.length === 0) continue;
 
-      // Check multi-team constraint: no team overlap with previous link
-      if (prevTeams.size > 0) {
-        const hasNewTeam = edgeTeams.some(t => !prevTeams.has(t));
-        if (!hasNewTeam) continue; // all teams overlap with previous link
-      }
+      // Check: at least one team in this edge must NOT be in usedTeams
+      const hasNewTeam = edgeTeams.some(t => !usedTeams.has(t));
+      if (!hasNewTeam) continue;
+
+      // Add all edge teams to used set
+      const newUsedTeams = new Set(usedTeams);
+      for (const t of edgeTeams) newUsedTeams.add(t);
 
       visited.add(neighbor);
       path.push(neighbor);
-      const newPrevTeams = new Set(edgeTeams);
-      dfs(neighbor, path, visited, newPrevTeams);
+      dfs(neighbor, path, visited, newUsedTeams);
       path.pop();
       visited.delete(neighbor);
 
-      if (bestPath) return; // found one, stop early
+      if (bestPath) return;
     }
   }
 

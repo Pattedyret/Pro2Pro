@@ -301,46 +301,48 @@ export class PlayerGraph {
 
   /**
    * Check if adding a new player to a chain violates the multi-team rule.
-   * Returns true if the new link shares ANY team with the previous link.
-   * Used to enforce insane mode during gameplay.
+   * Returns true if the new link uses ANY team already used in ANY previous link.
+   * Once a team is used as a connection, it's banned for the rest of the path.
    */
   wouldRepeatTeam(chain: number[], newPlayerId: number): boolean {
-    if (chain.length < 2) return false; // no previous link to compare against
+    if (chain.length < 2) return false; // first link, no previous teams
 
-    const prevPlayer = chain[chain.length - 2];
-    const lastPlayer = chain[chain.length - 1];
-
-    // Teams used in the previous link (second-to-last → last)
-    const prevTeams = new Set(this.adjacency.get(prevPlayer)?.get(lastPlayer) ?? []);
-    // Teams that would be used in the new link (last → new)
-    const newTeams = new Set(this.adjacency.get(lastPlayer)?.get(newPlayerId) ?? []);
-
-    for (const t of prevTeams) {
-      if (newTeams.has(t)) return true;
+    // Collect ALL teams used in every previous link in the chain
+    const usedTeams = new Set<number>();
+    for (let i = 0; i < chain.length - 1; i++) {
+      const teamIds = this.adjacency.get(chain[i])?.get(chain[i + 1]) ?? [];
+      for (const t of teamIds) usedTeams.add(t);
     }
-    return false;
+
+    // Check if the new link would use any already-used team
+    const newTeams = this.adjacency.get(chain[chain.length - 1])?.get(newPlayerId) ?? [];
+    // The guess is only valid if there's at least one NEW team not in usedTeams
+    // If ALL shared teams are already used, the player can't be added
+    const hasNewTeam = newTeams.some(t => !usedTeams.has(t));
+    return !hasNewTeam;
   }
 
   /**
-   * Check if a path has diverse team connections — no team used in consecutive links.
-   * For "Insane" mode: forces paths like NiKo→rain (FaZe) → fox (G2) → Mutiris (Portuguese team)
-   * instead of boring single-team chains where everyone just played on the same org.
+   * Check if a path has diverse team connections — no team used more than once across ALL links.
+   * Once a team connects two players, it can't be used anywhere else in the path.
    */
   hasMultiTeamLinks(path: number[]): boolean {
-    if (path.length < 3) return true; // 2-step path can't have consecutive links
+    if (path.length < 3) return true;
 
-    for (let i = 0; i < path.length - 2; i++) {
-      // Get team IDs for link i→i+1 and link i+1→i+2
-      const teamsA = new Set(this.adjacency.get(path[i])?.get(path[i + 1]) ?? []);
-      const teamsB = new Set(this.adjacency.get(path[i + 1])?.get(path[i + 2]) ?? []);
+    const usedTeams = new Set<number>();
+    for (let i = 0; i < path.length - 1; i++) {
+      const teamIds = this.adjacency.get(path[i])?.get(path[i + 1]) ?? [];
+      const uniqueIds = new Set(teamIds);
 
-      // Check if ANY team appears in both consecutive links
-      let overlap = false;
-      for (const t of teamsA) {
-        if (teamsB.has(t)) { overlap = true; break; }
+      // Check if ALL teams for this link are already used — if so, no valid new team
+      let hasNewTeam = false;
+      for (const t of uniqueIds) {
+        if (!usedTeams.has(t)) { hasNewTeam = true; break; }
       }
-      // If they share a team, the path isn't diverse enough
-      if (overlap) return false;
+      if (!hasNewTeam && i > 0) return false; // first link always OK
+
+      // Add all teams from this link to used set
+      for (const t of uniqueIds) usedTeams.add(t);
     }
     return true;
   }
