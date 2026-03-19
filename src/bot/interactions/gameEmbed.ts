@@ -329,12 +329,14 @@ export function createStatsEmbed(
  */
 export function createLeaderboardEmbed(
   guildName: string,
-  entries: { discord_user_id: string; games_won: number; avg_path_length: number; rank: number }[]
+  entries: { discord_user_id: string; daily_won: number; custom_won: number; random_won: number; daily_played: number; custom_played: number; random_played: number; avg_path_length: number; rank: number }[]
 ): EmbedBuilder {
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
   const lines = entries.map((e, i) => {
     const medal = medals[i] ?? `**${e.rank}.**`;
-    return `${medal} <@${e.discord_user_id}> \u2014 ${e.games_won} optimal | avg ${e.avg_path_length.toFixed(1)} steps`;
+    const won = e.daily_won + e.custom_won + e.random_won;
+    const played = e.daily_played + e.custom_played + e.random_played;
+    return `${medal} <@${e.discord_user_id}> \u2014 ${won}/${played} won | avg ${e.avg_path_length.toFixed(1)} steps`;
   });
 
   return new EmbedBuilder()

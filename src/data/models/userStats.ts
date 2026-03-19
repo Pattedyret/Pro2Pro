@@ -322,26 +322,32 @@ export function getUniquePlayerCount(userId: string): number {
   return row?.count ?? 0;
 }
 
-export function getLeaderboard(guildId: string, limit = 10): (UserStats & { rank: number })[] {
+export function getLeaderboard(guildId: string, limit = 10): (UserAllStats & { rank: number })[] {
   const db = getDb();
 
-  // Get users who have played in this guild
+  // Find users who have played any game mode in this guild:
+  // - daily games: tracked in user_attempts with guild_id
+  // - custom/random games: tracked in custom_game_attempts, joined via custom_games.guild_id
   const users = db.prepare(`
-    SELECT DISTINCT ua.discord_user_id
-    FROM user_attempts ua
-    WHERE ua.guild_id = ?
-  `).all(guildId) as { discord_user_id: string }[];
+    SELECT DISTINCT discord_user_id FROM (
+      SELECT ua.discord_user_id FROM user_attempts ua WHERE ua.guild_id = ?
+      UNION
+      SELECT cga.discord_user_id FROM custom_game_attempts cga
+        JOIN custom_games cg ON cg.id = cga.custom_game_id
+        WHERE cg.guild_id = ?
+    )
+  `).all(guildId, guildId) as { discord_user_id: string }[];
 
   const userIds = users.map(u => u.discord_user_id);
   if (userIds.length === 0) return [];
 
   const placeholders = userIds.map(() => '?').join(',');
   const stats = db.prepare(`
-    SELECT * FROM user_stats
+    SELECT * FROM user_all_stats
     WHERE discord_user_id IN (${placeholders})
-    ORDER BY games_won DESC, avg_path_length ASC
+    ORDER BY (daily_won + custom_won + random_won) DESC, avg_path_length ASC
     LIMIT ?
-  `).all(...userIds, limit) as UserStats[];
+  `).all(...userIds, limit) as UserAllStats[];
 
   return stats.map((s, i) => ({ ...s, rank: i + 1 }));
 }
