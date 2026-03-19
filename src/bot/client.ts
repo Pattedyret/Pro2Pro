@@ -70,6 +70,9 @@ export async function registerCommands(): Promise<void> {
       .setDescription('Admin commands')
       .addSubcommand(sub =>
         sub.setName('resync').setDescription('Clear and re-sync all roster data from PandaScore')
+      )
+      .addSubcommand(sub =>
+        sub.setName('fix-female-flags').setDescription('Reset incorrect is_female flags and rebuild graph instantly')
       ),
 
     new SlashCommandBuilder()

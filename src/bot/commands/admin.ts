@@ -1,6 +1,8 @@
 import { ChatInputCommandInteraction } from 'discord.js';
 import { config } from '../../config';
 import { pandaScoreSync } from '../../data/sync/pandaScore';
+import { getDb } from '../../data/db';
+import { playerGraph } from '../../game/graph';
 
 export async function handleAdmin(interaction: ChatInputCommandInteraction): Promise<void> {
   if (interaction.user.id !== config.adminUserId) {
@@ -21,5 +23,15 @@ export async function handleAdmin(interaction: ChatInputCommandInteraction): Pro
     } catch (err: any) {
       await interaction.editReply(`Resync failed: ${err?.message ?? err}`);
     }
+  }
+
+  if (sub === 'fix-female-flags') {
+    const db = getDb();
+    const result = db.prepare(`UPDATE players SET is_female = 0`).run();
+    playerGraph.build();
+    await interaction.reply({
+      content: `Reset is_female flag on ${result.changes} players and rebuilt graph. Players incorrectly hidden from search should now appear.`,
+      flags: 64,
+    });
   }
 }
