@@ -35,8 +35,8 @@ export const config = {
     hard:   { pool: 'famous' as const, minPaths: 2, minPath: 4, maxPath: 6, label: 'Hard',   emoji: '🔴' },
   },
 
-  // Difficulty rotation: cycles through these
-  difficultyRotation: ['medium', 'hard', 'hard', 'expert'] as const,
+  // Difficulty rotation: cycles through medium and hard only (no expert for dailies)
+  difficultyRotation: ['medium', 'hard', 'medium', 'hard'] as const,
 
   // Tournament organizer classification
   // A+ tier: premier organizers only (BLAST Premier, PGL Majors, IEM, ESL Pro League)

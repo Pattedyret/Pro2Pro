@@ -2,7 +2,8 @@ import cron from 'node-cron';
 import { client } from '../bot/client';
 import { config } from '../config';
 import { generatePuzzle, getTodayDifficulty, getNextPuzzleNumber } from '../game/puzzleGenerator';
-import { savePuzzle, getTodayPuzzle } from '../data/models/puzzle';
+import { savePuzzle, getTodayPuzzle, getPreviousPuzzle } from '../data/models/puzzle';
+import { getDb } from '../data/db';
 import { createPuzzleEmbed } from '../bot/interactions/gameEmbed';
 import { pandaScoreSync } from '../data/sync/pandaScore';
 import { playerGraph } from '../game/graph';
@@ -81,14 +82,28 @@ export async function generateAndPostDailyPuzzle(): Promise<void> {
     `(${generated.optimalPathLength} steps, ${generated.numValidPaths} paths, ${difficulty})`
   );
 
-  // Post to channel
+  // Post to channel with notification for previous daily players
   if (puzzleChannelId) {
     try {
       const channel = await client.channels.fetch(puzzleChannelId);
       if (channel && channel.isTextBased() && 'send' in channel) {
+        // Find users who played the previous daily to notify them
+        let pingLine = '';
+        const prevPuzzle = getPreviousPuzzle();
+        if (prevPuzzle) {
+          const db = getDb();
+          const prevPlayers = db.prepare(
+            'SELECT DISTINCT discord_user_id FROM user_attempts WHERE puzzle_id = ?'
+          ).all(prevPuzzle.id) as { discord_user_id: string }[];
+          if (prevPlayers.length > 0) {
+            const mentions = prevPlayers.map(p => `<@${p.discord_user_id}>`).join(' ');
+            pingLine = `\n${mentions}`;
+          }
+        }
+
         const { embed, rows } = createPuzzleEmbed(puzzle);
         await channel.send({
-          content: '\uD83C\uDFAF **New Pro2Pro Daily Puzzle!** Use `/pro2pro play` to play.',
+          content: `\uD83C\uDFAF **New Pro2Pro Daily Puzzle!** Use \`/pro2pro play\` to play.${pingLine}`,
           embeds: [embed],
         });
         console.log('[Scheduler] Puzzle posted to channel');

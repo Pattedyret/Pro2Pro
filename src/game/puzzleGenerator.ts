@@ -58,9 +58,9 @@ export function generatePuzzle(difficulty: keyof typeof config.difficulty): Gene
     // Check path length fits difficulty tier
     if (result.length < tier.minPath || result.length > tier.maxPath) continue;
 
-    // Count distinct shortest paths (must have multiple valid routes)
+    // Count distinct shortest paths — dailies need many solutions for variety
     const numPaths = countShortestPaths(startId, endId);
-    if (numPaths < 2) continue;
+    if (numPaths < 5) continue; // require 5+ distinct shortest paths
 
     return {
       startPlayerId: startId,

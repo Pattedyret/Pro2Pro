@@ -373,7 +373,6 @@ async function handlePlayerSelect(
   }
 
   // Persist updated state to DB (SQLite returns copies, not references)
-  const gameKey = getGameKey(gameType, interaction.user.id, gameType === 'custom' ? puzzleId : undefined);
   activeGames.set(gameKey, game);
 
   const teamNames = validation.sharedTeams.map(t => t.teamAcronym ?? t.teamName).join(', ');

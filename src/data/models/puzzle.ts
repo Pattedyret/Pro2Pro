@@ -44,3 +44,12 @@ export function getPuzzleByNumber(num: number): DailyPuzzle | null {
   const db = getDb();
   return db.prepare('SELECT * FROM daily_puzzles WHERE puzzle_number = ?').get(num) as DailyPuzzle | null;
 }
+
+/** Get the most recent daily puzzle before today (for notifying previous players) */
+export function getPreviousPuzzle(): DailyPuzzle | null {
+  const db = getDb();
+  const today = new Date().toISOString().split('T')[0];
+  return db.prepare(
+    'SELECT * FROM daily_puzzles WHERE date < ? ORDER BY date DESC LIMIT 1'
+  ).get(today) as DailyPuzzle | null;
+}
