@@ -40,6 +40,11 @@ async function main(): Promise<void> {
     await pandaScoreSync.syncAll();
   } else {
     console.log(`[Pro2Pro] Found ${playerCount} players in database`);
+    // Reset is_female flags on every startup — clears stale incorrect flags from bad
+    // PandaScore data (e.g. male players incorrectly listed on female team rosters).
+    // The team-name heuristic in isFemalePlayer() still catches genuinely female players,
+    // and the next scheduled sync will re-derive the DB flags properly.
+    db.prepare('UPDATE players SET is_female = 0').run();
     playerGraph.build();
   }
 
