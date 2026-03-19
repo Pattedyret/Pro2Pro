@@ -17,7 +17,7 @@ import { activeGames, getGameKey, getFullPath, givenUpGames, originalMessages } 
 import { playerGraph } from '../../game/graph';
 import { validateLink } from '../../game/validator';
 import { scorePath, calculatePar, getGameRating, formatScoreToPar } from '../../game/scorer';
-import { findShortestPath, findAllShortestPaths } from '../../game/pathfinder';
+import { findShortestPath, findAllShortestPaths, findMultiTeamPath } from '../../game/pathfinder';
 import { getTodayPuzzle, getPuzzleById } from '../../data/models/puzzle';
 import { saveUserAttempt, getUserAttempt, saveCustomGameAttempt, recordGiveUp, getUserStats } from '../../data/models/userStats';
 import { awardCompletionPoints } from '../../api/points';
@@ -686,7 +686,7 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
       const db = getDb();
       const customGame = db.prepare('SELECT * FROM custom_games WHERE id = ?').get(puzzleId) as any;
       if (customGame) {
-        game = { puzzleId, type: 'custom', forwardPath: [], backwardPath: [], searchDirection: 'forward', startPlayerId: customGame.start_player_id, endPlayerId: customGame.end_player_id };
+        game = { puzzleId, type: 'custom', forwardPath: [], backwardPath: [], searchDirection: 'forward', startPlayerId: customGame.start_player_id, endPlayerId: customGame.end_player_id, difficulty: customGame.difficulty ?? undefined };
       }
     }
   }
@@ -707,7 +707,14 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
     const guGameMode = game.type === 'daily' ? 'daily' : (guCustomGame?.game_mode === 'random' ? 'random' : 'custom') as 'daily' | 'custom' | 'random';
     recordGiveUp(interaction.user.id, guGameMode);
 
-    const allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
+    // For insane mode, show a valid multi-team path instead of regular shortest paths
+    let allPaths: number[][];
+    if (game.difficulty === 'insane') {
+      const mtPath = findMultiTeamPath(game.startPlayerId, game.endPlayerId, 8);
+      allPaths = mtPath ? [mtPath.path] : findAllShortestPaths(game.startPlayerId, game.endPlayerId, 1);
+    } else {
+      allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
+    }
     if (allPaths.length > 0) {
       const optimalLength = allPaths[0].length - 1;
 

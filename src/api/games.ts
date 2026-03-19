@@ -360,7 +360,14 @@ router.post('/:sessionId/giveup', authOptional, (req, res) => {
     return;
   }
 
-  const allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
+  // For insane mode, show a valid multi-team path; otherwise show regular shortest paths
+  let allPaths: number[][];
+  if (game.difficulty === 'insane') {
+    const mtPath = findMultiTeamPath(game.startPlayerId, game.endPlayerId, 8);
+    allPaths = mtPath ? [mtPath.path] : findAllShortestPaths(game.startPlayerId, game.endPlayerId, 1);
+  } else {
+    allPaths = findAllShortestPaths(game.startPlayerId, game.endPlayerId, 3);
+  }
   deleteWebSession(sessionId);
 
   // Mark daily as attempted (given up) so they can't replay (auth'd users only)
