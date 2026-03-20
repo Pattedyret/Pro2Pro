@@ -4,7 +4,8 @@
   "description": "CS:GO/CS2 Six Degrees puzzle game Discord bot",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && npm --prefix web install && npm --prefix web run build",
+    "postinstall": "npm --prefix web install",
+    "build": "tsc && npm --prefix web run build",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "deploy-commands": "ts-node -e \"require('./src/bot/client').registerCommands()\""
