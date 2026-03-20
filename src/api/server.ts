@@ -23,6 +23,20 @@ export function startApiServer(): void {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Debug filesystem (temporary)
+  app.get('/api/debug/fs', (_req, res) => {
+    const webDist = path.resolve(__dirname, '../../web/dist');
+    const appDir = path.resolve(__dirname, '../../');
+    res.json({
+      dirname: __dirname,
+      appDir,
+      webDist,
+      webDistExists: fs.existsSync(webDist),
+      appContents: fs.existsSync(appDir) ? fs.readdirSync(appDir) : [],
+      webContents: fs.existsSync(`${appDir}/web`) ? fs.readdirSync(`${appDir}/web`) : [],
+    });
+  });
+
   // Routes
   app.use('/api/auth', authRoutes);
   app.use('/api/puzzles', puzzleRoutes);
