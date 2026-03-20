@@ -32,6 +32,7 @@ export function startApiServer(): void {
 
   // Serve web frontend from the same Express server
   const webDist = path.resolve(__dirname, '../../web/dist');
+  console.log(`[API] Looking for web frontend at: ${webDist} (exists: ${fs.existsSync(webDist)})`);
   if (fs.existsSync(webDist)) {
     app.use(express.static(webDist));
     app.get('*', (_req, res) => {
