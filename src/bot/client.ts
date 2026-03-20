@@ -91,6 +91,12 @@ export async function registerCommands(): Promise<void> {
           .setDescription('Ending player name')
           .setRequired(true)
           .setAutocomplete(true)
+      )
+      .addBooleanOption(opt =>
+        opt
+          .setName('insane')
+          .setDescription('💀 Insane mode — no team can be used twice across the whole path')
+          .setRequired(false)
       ),
   ];
 

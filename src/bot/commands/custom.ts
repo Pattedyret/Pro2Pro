@@ -19,6 +19,7 @@ import { calculatePar } from '../../game/scorer';
 export async function handleCustom(interaction: ChatInputCommandInteraction): Promise<void> {
   const player1Input = interaction.options.getString('player1', true);
   const player2Input = interaction.options.getString('player2', true);
+  const insaneMode = interaction.options.getBoolean('insane') ?? false;
 
   // Autocomplete sends player IDs; manual input sends names
   const player1 = resolvePlayer(player1Input);
@@ -56,8 +57,8 @@ export async function handleCustom(interaction: ChatInputCommandInteraction): Pr
   // Save custom game to DB
   const db = getDb();
   const insertResult = db.prepare(`
-    INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible, game_mode)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'custom')
+    INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible, game_mode, difficulty)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'custom', ?)
   `).run(
     interaction.user.id,
     interaction.guildId ?? '',
@@ -65,7 +66,8 @@ export async function handleCustom(interaction: ChatInputCommandInteraction): Pr
     player1.id,
     player2.id,
     result.length,
-    numPaths
+    numPaths,
+    insaneMode ? 'insane' : null
   );
 
   const customGameId = Number(insertResult.lastInsertRowid);
@@ -80,11 +82,12 @@ export async function handleCustom(interaction: ChatInputCommandInteraction): Pr
   const embed = new EmbedBuilder()
     .setTitle(`\u26F3 Custom Pro2Pro`)
     .setDescription(
+      (insaneMode ? `\uD83D\uDC80 **Insane mode** — no team can be used twice\n\n` : '') +
       `\uD83D\uDFE2 **${startHint}**  \u2192  ???  \u2192  **${endHint}** \uD83D\uDD34\n\n` +
       `\uD83C\uDFCC\uFE0F Par: **${par}** | Shortest: **${result.length}**\n\n` +
       `_Anyone can play! Click a button to start._`
     )
-    .setColor(0xEB459E);
+    .setColor(insaneMode ? 0x9B59B6 : 0xEB459E);
 
   if (player1.imageUrl) embed.setThumbnail(player1.imageUrl);
 
