@@ -1,31 +1,35 @@
-# Stage 1: Build
-FROM node:20-slim AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build tools for better-sqlite3 native compilation
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+# Install root dependencies
+COPY package*.json ./
+RUN npm install
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Install web dependencies
+COPY web/package*.json ./web/
+RUN npm --prefix web install
 
-COPY tsconfig.json ./
-COPY src/ ./src/
+# Copy all source files
+COPY . .
+
+# Build TypeScript backend
 RUN npx tsc
 
+# Build web frontend into dist/public/
+RUN npm --prefix web run build
 
-# Stage 2: Production (no build tools needed — native modules already compiled)
-FROM node:20-slim
+# ── Production image ─────────────────────────────────────
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json ./
-
-# Copy pre-compiled node_modules and built output from builder
+COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# Create data directory for SQLite (use Railway volumes for persistence)
+# Create data dir (Railway volume mounts here for the SQLite DB)
 RUN mkdir -p /app/data
 
+EXPOSE 8080
 CMD ["node", "dist/index.js"]
