@@ -23,20 +23,6 @@ export function startApiServer(): void {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Debug filesystem (temporary)
-  app.get('/api/debug/fs', (_req, res) => {
-    const distDir = path.resolve(__dirname, '..');
-    const publicDir = path.resolve(__dirname, '../public');
-    res.json({
-      dirname: __dirname,
-      distDir,
-      publicDir,
-      publicExists: fs.existsSync(publicDir),
-      distContents: fs.existsSync(distDir) ? fs.readdirSync(distDir) : [],
-      publicContents: fs.existsSync(publicDir) ? fs.readdirSync(publicDir) : [],
-    });
-  });
-
   // Routes
   app.use('/api/auth', authRoutes);
   app.use('/api/puzzles', puzzleRoutes);
